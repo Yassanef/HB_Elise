@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Lettre d'amour pour Élise</title>
+  <!-- Google Fonts pour une belle écriture manuscrite -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app" role="main" aria-live="polite">
+    <!-- Container centré pour les phrases -->
+    <div id="card" class="card">
+      <div id="phrase" class="phrase"></div>
+      <div id="hint" class="hint">Appuyez sur Entrée ou cliquez pour continuer</div>
+
+      <!-- Controls UI: previous / next / replay / sound / restart -->
+      <div id="controls" class="controls" role="toolbar" aria-label="Contrôles de la lettre">
+        <button id="prevBtn" type="button" class="ctrl-btn" title="Précédent" aria-label="Précédent">◀</button>
+        <button id="replayBtn" type="button" class="ctrl-btn" title="Relire" aria-label="Relire">⟳</button>
+        <button id="nextBtn" type="button" class="ctrl-btn primary" title="Suivant" aria-label="Suivant">▶</button>
+        <button id="soundBtn" type="button" class="ctrl-btn" title="Activer/Désactiver son" aria-pressed="true" aria-label="Activer ou désactiver le son">🔔</button>
+        <button id="restartBtn" type="button" class="ctrl-btn" title="Redémarrer" aria-label="Redémarrer la lettre">⟲</button>
+
+        <div class="control-group">
+          <label for="autoToggle" class="label-inline">Auto</label>
+          <input id="autoToggle" type="checkbox" aria-label="Activer lecture automatique">
+        </div>
+
+        <div class="control-group range-group" title="Vitesse machine à écrire">
+          <label for="speedRange" class="label-inline">Vitesse</label>
+          <input id="speedRange" type="range" min="10" max="150" value="45" aria-label="Vitesse de la machine à écrire">
+        </div>
+
+        <div id="progress" class="progress" aria-hidden="true">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div id="progressText" class="progress-text" aria-live="polite">1 / 1</div>
+      </div>
+    </div>
+
+    <!-- Canvas pour particules (coeurs/confettis) -->
+    <canvas id="particles"></canvas>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+/* styles.css
+   Thème pastel romantique, responsive.
+   Les animations sont commentées pour faciliter les modifications.
+*/
+
+:root{
+  --bg1: #ffeaf0; /* crème pâle */
+  --bg2: #fff0f6; /* pêche très clair */
+  --accent1: #f8c8dc; /* rose clair */
+  --accent2: #e8d6ff; /* lavande */
+  --accent3: #ffd9c2; /* pêche */
+  --text: #5b3a45; /* brun doux pour la lisibilité */
+  --muted: #8a6b73;
+}
+
+*{box-sizing:border-box}
+html,body,#app{height:100%}
+body{
+  margin:0;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color:var(--text);
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+/* Légère animation de gradient de fond */
+@keyframes bgShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+body{
+  background-size:400% 400%;
+  animation: bgShift 18s ease-in-out infinite;
+}
+
+/* Carte centrale contenant la phrase */
+.card{
+  width:min(90%,900px);
+  max-width:900px;
+  min-height:240px;
+  padding:40px 32px;
+  border-radius:20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+  box-shadow: 0 10px 30px rgba(91,58,69,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  backdrop-filter: blur(6px);
+}
+
+/* Police manuscrite élégante pour le texte principal */
+.phrase{
+  font-family: 'Brush Script MT', 'Lucida Handwriting', 'Segoe Print', 'Caveat', cursive;
+  font-size: clamp(1.6rem, 3.6vw, 2.6rem);
+  line-height:1.3;
+  color:var(--text);
+  max-width:85%;
+  word-wrap:break-word;
+}
+
+.hint{
+  margin-top:18px;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size:0.9rem;
+  color:var(--muted);
+}
+
+/* Controls UI styles */
+.controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+  margin-top:18px;
+  flex-wrap:wrap;
+}
+.ctrl-btn{
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8));
+  border:1px solid rgba(91,58,69,0.06);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:1rem;
+  cursor:pointer;
+  box-shadow: 0 6px 14px rgba(91,58,69,0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms;
+}
+.ctrl-btn:hover{ transform:translateY(-3px); box-shadow: 0 12px 24px rgba(91,58,69,0.08); }
+.ctrl-btn.primary{ background: linear-gradient(90deg, var(--accent1), var(--accent2)); color:#fff; font-weight:600 }
+.ctrl-btn[aria-pressed="false"]{ opacity:0.6 }
+
+/* Focus visible for accessibility */
+.ctrl-btn:focus{ outline:3px solid rgba(232,214,255,0.6); outline-offset:3px }
+
+.control-group{ display:flex; align-items:center; gap:8px; }
+.label-inline{ font-size:0.85rem; color:var(--muted) }
+.range-group input[type="range"]{ width:100px }
+.control-group input[type="checkbox"]{ width:18px; height:18px; accent-color: #f4a7c4 }
+.control-group input[type="range"]{ accent-color: var(--accent1); height:28px }
+
+.progress{ width:120px; height:8px; background:rgba(255,255,255,0.6); border-radius:999px; overflow:hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6) }
+.progress-bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--accent1), var(--accent3)); transition:width 450ms ease }
+.progress-text{ font-size:0.9rem; color:var(--muted); margin-left:6px }
+
+/* Animation d'apparition combinée: fondu + slide depuis le bas + léger zoom */
+@keyframes fadeSlideUp{
+  0%{opacity:0; transform:translateY(18px) scale(0.98);}
+  60%{opacity:1; transform:translateY(-6px) scale(1.03);}
+  100%{opacity:1; transform:translateY(0) scale(1);}
+}
+
+/* Petite oscillation / tremblement mignon */
+@keyframes cuteShake{
+  0%{transform: translateX(0) rotate(0deg)}
+  20%{transform: translateX(-3px) rotate(-1deg)}
+  40%{transform: translateX(2px) rotate(1deg)}
+  60%{transform: translateX(-1px) rotate(-0.5deg)}
+  80%{transform: translateX(1px) rotate(0.5deg)}
+  100%{transform: translateX(0) rotate(0deg)}
+}
+
+/* Zoom doux à l'apparition */
+@keyframes softPop{
+  from{transform:scale(0.95); opacity:0}
+  to{transform:scale(1); opacity:1}
+}
+
+/* Pulse pour les mots importants */
+@keyframes pulseImportant{
+  0%{transform:scale(1); filter: drop-shadow(0 2px 0 rgba(248,200,220,0.15));}
+  50%{transform:scale(1.08);}
+  100%{transform:scale(1);}
+}
+
+/* Classes JS appliquées dynamiquement */
+.show-phrase{
+  animation: fadeSlideUp 700ms ease-out, softPop 700ms ease-out;
+}
+
+/* Utilisé pour un petit tremblement facultatif */
+.shaky{
+  animation: cuteShake 900ms ease-in-out;
+}
+
+/* Important words (pulsent) */
+.important{
+  display:inline-block;
+  color:#ffffff;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin:0 3px;
+  font-weight:600;
+  animation: pulseImportant 1400ms ease-in-out infinite;
+}
+
+/* Typewriter cursor */
+.typewriter-caret{
+  display:inline-block;
+  width:2px;
+  height:1.05em;
+  background:var(--text);
+  margin-left:6px;
+  vertical-align:middle;
+  animation: blinkCaret 900ms steps(1) infinite;
+}
+@keyframes blinkCaret{50%{opacity:0}}
+
+/* Styles finaux du message final */
+.final-message{
+  font-size: clamp(2rem, 6vw, 3.8rem);
+  letter-spacing:1px;
+  font-family: 'Caveat', 'Brush Script MT', cursive;
+  animation: pulseImportant 1200ms ease-in-out infinite;
+}
+
+/* Quelques éléments décoratifs CSS (petits coeurs/étoiles via pseudo éléments) */
+.card::before, .card::after{
+  content:'';
+  position:absolute;
+  width:80px; height:80px; opacity:0.08; pointer-events:none;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), transparent 40%);
+  filter: blur(6px);
+}
+.card::before{ left: -10px; top:-10px; transform: rotate(12deg); background: linear-gradient(45deg,var(--accent1),var(--accent3))}
+.card::after{ right:-10px; bottom:-10px; transform: rotate(-22deg); background: linear-gradient(45deg,var(--accent2),var(--accent3))}
+
+/* Responsive tweaks */
+@media (max-width:480px){
+  .card{ padding:28px 18px; border-radius:14px; }
+  .hint{ font-size:0.85rem }
+  .controls{ gap:8px }
+}
+
+/* Canvas full-screen for particules */
+#particles{
+  position:fixed; inset:0; pointer-events:none; width:100%; height:100%; z-index:30;
+}
+
+/* Notes pour développeur:
+ - Modifier l'animation fadeSlideUp pour changer vitesse/déplacement.
+ - La classe .important applique pulse; vous pouvez changer timing dans pulseImportant.
+ - La machine à écrire est gérée dans script.js; activez-la en mettant "typewriter:true" sur une phrase.
+*/
