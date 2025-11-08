@@ -35,7 +35,7 @@ const rectanglesOverlap = (a, b, buffer = 0) => {
 
 const rawSlides = [
   { id: 1, text: "Coucou ! Je voulais t'écrire une lettre au final, mais tu connais mon écriture...", typewriter: true },
-  { id: 2, text: "Donc je t'ai écrit ça ! Voilà pour toi  ^", typewriter: true },
+  { id: 2, text: "Donc je t'ai écrit ça ! Voilà pour toi  ^^", typewriter: true },
 
   { id: 3, text: "Pour ma copine d'amour, Élise 💖", typewriter: true, photos: ["photo_01.JPG", "photo_02.jpg", "photo_03.jpg"] },
   { id: 4, text: "T'es vraiment la personne la plus importante pour moi, et je suis tellement, tellement heureux de t'avoir trouvée", typewriter: true, photos: ["photo_04.JPG", "photo_05.JPG", "photo_06.JPG"] },
@@ -74,6 +74,149 @@ const defaultParticleApi = {
   burst: () => {},
   celebrate: () => {},
   spray: () => {},
+};
+
+const HandCursor = () => {
+  const cursorRef = useRef(null);
+  const supportsCustomCursor = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    if (!window.matchMedia) return true;
+    try {
+      return !window.matchMedia("(pointer: coarse)").matches;
+    } catch (error) {
+      return true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!supportsCustomCursor) {
+      return undefined;
+    }
+
+  const root = document.documentElement;
+  root.classList.add("custom-cursor-active", "cursor-hand");
+  root.classList.remove("cursor-foot");
+
+    const cursorEl = cursorRef.current;
+    if (!cursorEl) {
+      return () => {
+        root.classList.remove("custom-cursor-active");
+      };
+    }
+
+    let rafId = 0;
+    let lastX = window.innerWidth / 2;
+    let lastY = window.innerHeight / 2;
+
+    const updateTransform = (x, y) => {
+      lastX = x;
+      lastY = y;
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        cursorEl.style.setProperty("--cursor-x", `${lastX}px`);
+        cursorEl.style.setProperty("--cursor-y", `${lastY}px`);
+        rafId = 0;
+      });
+    };
+
+    const show = () => {
+      cursorEl.dataset.hidden = "false";
+    };
+
+    const hide = () => {
+      cursorEl.dataset.hidden = "true";
+    };
+
+  const interactiveSelector = "button, a, input[type=\"range\"], .btn, .love-control-button, .big-next-btn, .photo-card, .photo-lightbox, .photo-lightbox-close";
+
+    const updateVariant = (target) => {
+      if (!target || typeof target.closest !== "function") {
+        cursorEl.dataset.variant = "default";
+        return;
+      }
+      if (target.closest && target.closest(".love-controls.is-dragging")) {
+        cursorEl.dataset.variant = "dragging";
+        return;
+      }
+      if (target.closest && target.closest(".love-controls")) {
+        cursorEl.dataset.variant = "drag";
+        return;
+      }
+      cursorEl.dataset.variant = target.closest(interactiveSelector) ? "interactive" : "default";
+    };
+
+    const handlePointerMove = (event) => {
+      if (event.pointerType === "touch") return;
+      show();
+      updateTransform(event.clientX, event.clientY);
+      updateVariant(event.target);
+    };
+
+    const handlePointerDown = (event) => {
+      if (event.pointerType === "touch") return;
+      cursorEl.dataset.active = "true";
+    };
+
+    const handlePointerUp = (event) => {
+      if (event.pointerType === "touch") return;
+      cursorEl.dataset.active = "false";
+      window.requestAnimationFrame(() => {
+        const element = document.elementFromPoint ? document.elementFromPoint(lastX, lastY) : null;
+        updateVariant(element);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hide();
+      }
+    };
+
+    const handleMouseLeave = (event) => {
+      if (!event.relatedTarget) {
+        hide();
+      }
+    };
+
+    updateTransform(lastX, lastY);
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    window.addEventListener("pointerup", handlePointerUp, { passive: true });
+    window.addEventListener("pointercancel", handlePointerUp, { passive: true });
+    window.addEventListener("blur", hide, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("mouseleave", handleMouseLeave);
+
+    return () => {
+      root.classList.remove("custom-cursor-active", "cursor-hand");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+      window.removeEventListener("blur", hide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [supportsCustomCursor]);
+
+  if (!supportsCustomCursor) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={cursorRef}
+      className="custom-hand-cursor"
+      data-hidden="true"
+      data-active="false"
+      data-variant="default"
+      aria-hidden="true"
+    />
+  );
 };
 
 function useParticleEngine(canvasId = "particles") {
@@ -595,6 +738,8 @@ const UnifiedLoveApp = () => {
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [controlPosition, setControlPosition] = useState(null);
   const [controlsDragging, setControlsDragging] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [audioReplayKey, setAudioReplayKey] = useState(0);
 
   const autoTimerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -606,7 +751,145 @@ const UnifiedLoveApp = () => {
   const transitionTimersRef = useRef([]);
   const transitionActiveRef = useRef(false);
   const pendingRevealRef = useRef(null);
+  const volumeRef = useRef(volume);
+  const audioBankRef = useRef({});
+  const activeAudioRef = useRef(null);
+  const pendingAudioRef = useRef(null);
   const particles = useParticleEngine();
+  const totalSlides = slides.length;
+  const currentSlide = slides[currentIndex];
+  const currentSlideId = currentSlide?.id;
+  const isFinalSlide = currentIndex === totalSlides - 1;
+  const baseSlideSeed = useMemo(() => Math.random() * 1e9, [currentSlide.id]);
+  const stageSeed = useMemo(() => Math.floor(baseSlideSeed + decorSeed * 9973), [baseSlideSeed, decorSeed]);
+  const fadeDuration = 320;
+
+  const stopActiveAudio = useCallback(() => {
+    const active = activeAudioRef.current;
+    if (active) {
+      try {
+        active.pause();
+        active.currentTime = 0;
+      } catch (error) {
+        // ignore audio stop errors
+      }
+      if (pendingAudioRef.current === active) {
+        pendingAudioRef.current = null;
+      }
+      activeAudioRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+    Object.values(audioBankRef.current).forEach((audio) => {
+      if (audio) {
+        audio.volume = volume;
+      }
+    });
+  }, [volume]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const map = {};
+    slides.forEach((slide) => {
+      const audio = new Audio(`ressources/Voc/${slide.id}.m4a`);
+      audio.preload = "auto";
+      audio.volume = volumeRef.current;
+      map[slide.id] = audio;
+    });
+    audioBankRef.current = map;
+
+    return () => {
+      Object.values(audioBankRef.current).forEach((audio) => {
+        if (!audio) return;
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = "";
+          audio.removeAttribute("src");
+        } catch (error) {
+          // ignore cleanup errors
+        }
+      });
+      audioBankRef.current = {};
+      activeAudioRef.current = null;
+      pendingAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const resumePending = () => {
+      const pending = pendingAudioRef.current;
+      if (pending) {
+        pending.currentTime = 0;
+        pending.volume = volumeRef.current;
+        const attempt = pending.play();
+        if (attempt && typeof attempt.catch === "function") {
+          attempt.catch(() => {});
+        }
+        pendingAudioRef.current = null;
+      }
+    };
+
+    window.addEventListener("pointerdown", resumePending);
+    window.addEventListener("keydown", resumePending);
+
+    return () => {
+      window.removeEventListener("pointerdown", resumePending);
+      window.removeEventListener("keydown", resumePending);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    if (!currentSlideId) return undefined;
+
+    const audios = audioBankRef.current;
+    const nextAudio = audios ? audios[currentSlideId] : undefined;
+    const previousAudio = activeAudioRef.current;
+
+    if (previousAudio && previousAudio !== nextAudio) {
+      previousAudio.pause();
+      previousAudio.currentTime = 0;
+      if (pendingAudioRef.current === previousAudio) {
+        pendingAudioRef.current = null;
+      }
+    }
+
+    if (!nextAudio) {
+      activeAudioRef.current = null;
+      return undefined;
+    }
+
+    nextAudio.currentTime = 0;
+    nextAudio.volume = volumeRef.current;
+
+    const playPromise = nextAudio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch((error) => {
+        if (error?.name === "NotAllowedError" || error?.name === "AbortError" || error?.name === "NotSupportedError") {
+          pendingAudioRef.current = nextAudio;
+        }
+      });
+    }
+
+    activeAudioRef.current = nextAudio;
+
+    return () => {
+      if (pendingAudioRef.current === nextAudio) {
+        pendingAudioRef.current = null;
+      }
+      if (activeAudioRef.current === nextAudio) {
+        nextAudio.pause();
+        nextAudio.currentTime = 0;
+        activeAudioRef.current = null;
+      }
+    };
+  }, [audioReplayKey, currentSlideId]);
 
   // Preload all photos once the user reaches the 2nd slide (index 1).
   // This starts the full preload earlier to reduce perceived latency.
@@ -669,13 +952,6 @@ const UnifiedLoveApp = () => {
     setLightboxPhoto({ ...photo });
   }, []);
 
-  const totalSlides = slides.length;
-  const currentSlide = slides[currentIndex];
-  const isFinalSlide = currentIndex === totalSlides - 1;
-  const baseSlideSeed = useMemo(() => Math.random() * 1e9, [currentSlide.id]);
-  const stageSeed = useMemo(() => Math.floor(baseSlideSeed + decorSeed * 9973), [baseSlideSeed, decorSeed]);
-  const fadeDuration = 320;
-
   const clearAutoTimer = useCallback(() => {
     if (autoTimerRef.current) {
       clearTimeout(autoTimerRef.current);
@@ -702,6 +978,7 @@ const UnifiedLoveApp = () => {
       pendingRevealRef.current = nextIndex;
       clearAutoTimer();
       clearTransitionTimers();
+      stopActiveAudio();
       setUiVisible(false);
       setButtonState(BigButtonState.Hidden);
 
@@ -716,7 +993,7 @@ const UnifiedLoveApp = () => {
 
       transitionTimersRef.current.push(changeTimer, settleTimer);
     },
-    [clearAutoTimer, clearTransitionTimers, currentIndex, fadeDuration, totalSlides]
+    [clearAutoTimer, clearTransitionTimers, currentIndex, fadeDuration, stopActiveAudio, totalSlides]
   );
 
   useEffect(() => {
@@ -821,17 +1098,19 @@ const UnifiedLoveApp = () => {
     if (isTyping || transitionActiveRef.current) return;
     clearAutoTimer();
     if (currentIndex >= totalSlides - 1) {
+      stopActiveAudio();
       window.location.href = "final.html";
       return;
     }
     startSlideTransition(currentIndex + 1);
-  }, [isTyping, currentIndex, totalSlides, clearAutoTimer, startSlideTransition]);
+  }, [isTyping, currentIndex, totalSlides, clearAutoTimer, startSlideTransition, stopActiveAudio]);
 
   const handlePrev = useCallback(() => {
     if (isTyping || transitionActiveRef.current) return;
     clearAutoTimer();
     pendingRevealRef.current = null;
     setUiVisible(true);
+    stopActiveAudio();
     setCurrentIndex((index) => {
       const next = Math.max(0, index - 1);
       if (next !== index) {
@@ -839,7 +1118,7 @@ const UnifiedLoveApp = () => {
       }
       return next;
     });
-  }, [clearAutoTimer, isTyping]);
+  }, [clearAutoTimer, isTyping, stopActiveAudio]);
 
   const handleRestart = useCallback(() => {
     if (transitionActiveRef.current) return;
@@ -848,8 +1127,10 @@ const UnifiedLoveApp = () => {
     finalCelebrationRef.current = false;
     setDecorSeed((value) => value + 1);
     setUiVisible(true);
+    stopActiveAudio();
+    setAudioReplayKey((value) => value + 1);
     setCurrentIndex(0);
-  }, [clearAutoTimer]);
+  }, [clearAutoTimer, stopActiveAudio]);
 
   useEffect(() => {
     clearAutoTimer();
@@ -1192,12 +1473,21 @@ const UnifiedLoveApp = () => {
     setTypewriterSpeed(computed);
   };
 
+  const onVolumeChange = (event) => {
+    const value = Number(event.target.value);
+    if (Number.isNaN(value)) return;
+    const clamped = Math.min(100, Math.max(0, value));
+    setVolume(clamped / 100);
+  };
+
   const displaySpeedRaw = Math.max(0.01, typewriterSpeed * (turboEnabled ? 0.01 : 1));
   const isWholeDisplayValue = Math.abs(displaySpeedRaw - Math.round(displaySpeedRaw)) < 1e-6;
   const displaySpeed = displaySpeedRaw.toLocaleString("fr-FR", {
     minimumFractionDigits: isWholeDisplayValue ? 0 : 2,
     maximumFractionDigits: 2,
   });
+  const volumeSliderValue = Math.round(Math.min(100, Math.max(0, volume * 100)));
+  const displayVolume = volumeSliderValue;
 
   const controlsStyle = useMemo(() => {
     if (!controlPosition) {
@@ -1285,6 +1575,23 @@ const UnifiedLoveApp = () => {
           />
           <label htmlFor="speedRange" className="love-control-cap">
             Vitesse ({displaySpeed} ms)
+          </label>
+        </div>
+
+        <div className="love-control-col love-slider-col">
+          <input
+            id="volumeRange"
+            type="range"
+            min={0}
+            max={100}
+            value={volumeSliderValue}
+            step={1}
+            onChange={onVolumeChange}
+            aria-label="Volume du message audio"
+            className="love-speed-slider love-volume-slider"
+          />
+          <label htmlFor="volumeRange" className="love-control-cap">
+            Volume ({displayVolume}%)
           </label>
         </div>
 
@@ -1380,6 +1687,7 @@ const UnifiedLoveApp = () => {
         className={`big-next-btn ${isFinalSlide ? "final-mode" : ""} ${uiVisible && buttonState === BigButtonState.Visible ? "is-visible" : "is-hidden"}`}
         onClick={() => {
           if (isFinalSlide) {
+            stopActiveAudio();
             window.location.href = "final.html";
             return;
           }
@@ -1389,6 +1697,8 @@ const UnifiedLoveApp = () => {
       >
         {isFinalSlide ? "Fêter 🎉" : "Suivant 💖"}
       </button>
+
+      <HandCursor />
     </div>
   );
 };

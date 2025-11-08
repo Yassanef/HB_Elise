@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="cursor-foot">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -172,6 +172,127 @@
           window.location.href = 'ressources/diaporama.html';
         });
       }
+    })();
+  </script>
+  <script>
+    (function () {
+      const supportsPointer = typeof window !== 'undefined' && (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches);
+      if (!supportsPointer) {
+        return;
+      }
+
+  const root = document.documentElement;
+  root.classList.add('custom-cursor-active', 'cursor-foot');
+  root.classList.remove('cursor-hand');
+
+      const cursorEl = document.createElement('div');
+      cursorEl.className = 'custom-hand-cursor';
+      cursorEl.dataset.hidden = 'true';
+      cursorEl.dataset.active = 'false';
+      cursorEl.dataset.variant = 'default';
+      document.body.appendChild(cursorEl);
+
+      let rafId = 0;
+      let lastX = window.innerWidth / 2;
+      let lastY = window.innerHeight / 2;
+
+      const scheduleTransform = (x, y) => {
+        lastX = x;
+        lastY = y;
+        if (rafId) return;
+        rafId = window.requestAnimationFrame(() => {
+          cursorEl.style.setProperty('--cursor-x', `${lastX}px`);
+          cursorEl.style.setProperty('--cursor-y', `${lastY}px`);
+          rafId = 0;
+        });
+      };
+
+      const show = () => {
+        cursorEl.dataset.hidden = 'false';
+      };
+
+      const hide = () => {
+        cursorEl.dataset.hidden = 'true';
+      };
+
+      const interactiveSelector = 'button, a, .btn';
+
+      const updateVariant = (target) => {
+        if (!target || typeof target.closest !== 'function') {
+          cursorEl.dataset.variant = 'default';
+          return;
+        }
+        cursorEl.dataset.variant = target.closest(interactiveSelector) ? 'interactive' : 'default';
+      };
+
+      const handlePointerMove = (event) => {
+        if (event.pointerType === 'touch') {
+          return;
+        }
+        show();
+        scheduleTransform(event.clientX, event.clientY);
+        updateVariant(event.target);
+      };
+
+      const handlePointerDown = (event) => {
+        if (event.pointerType === 'touch') {
+          return;
+        }
+        cursorEl.dataset.active = 'true';
+      };
+
+      const handlePointerUp = (event) => {
+        if (event.pointerType === 'touch') {
+          return;
+        }
+        cursorEl.dataset.active = 'false';
+        window.requestAnimationFrame(() => {
+          const el = document.elementFromPoint(lastX, lastY);
+          updateVariant(el);
+        });
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          hide();
+        }
+      };
+
+      const handleMouseLeave = (event) => {
+        if (!event.relatedTarget) {
+          hide();
+        }
+      };
+
+      scheduleTransform(lastX, lastY);
+
+      window.addEventListener('pointermove', handlePointerMove, { passive: true });
+      window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+      window.addEventListener('pointerup', handlePointerUp, { passive: true });
+      window.addEventListener('pointercancel', handlePointerUp, { passive: true });
+      window.addEventListener('blur', hide, { passive: true });
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener('mouseleave', handleMouseLeave);
+
+      const cleanup = () => {
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerdown', handlePointerDown);
+        window.removeEventListener('pointerup', handlePointerUp);
+        window.removeEventListener('pointercancel', handlePointerUp);
+        window.removeEventListener('blur', hide);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener('mouseleave', handleMouseLeave);
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+        }
+        if (cursorEl.parentNode) {
+          cursorEl.parentNode.removeChild(cursorEl);
+        }
+  root.classList.remove('custom-cursor-active');
+      };
+
+      window.addEventListener('pagehide', cleanup, { once: true });
+      window.addEventListener('beforeunload', cleanup, { once: true });
     })();
   </script>
 </body>

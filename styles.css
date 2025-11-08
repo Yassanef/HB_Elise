@@ -6,6 +6,33 @@
   --accent1: #f8c8dc;
   --accent2: #e1c7ff;
   --text: #5a2f50;
+  --cursor-image: url('ressources/hand.png');
+  --cursor-width: 74px;
+  --cursor-height: 74px;
+  --cursor-offset-x: 18px;
+  --cursor-offset-y: 10px;
+  --cursor-origin-x: 18%;
+  --cursor-origin-y: 12%;
+}
+
+html.cursor-hand {
+  --cursor-image: url('ressources/hand.png');
+  --cursor-width: 74px;
+  --cursor-height: 74px;
+  --cursor-offset-x: 18px;
+  --cursor-offset-y: 10px;
+  --cursor-origin-x: 18%;
+  --cursor-origin-y: 12%;
+}
+
+html.cursor-foot {
+  --cursor-image: url('ressources/pied.png');
+  --cursor-width: 82px;
+  --cursor-height: 82px;
+  --cursor-offset-x: 30px;
+  --cursor-offset-y: 42px;
+  --cursor-origin-x: 36%;
+  --cursor-origin-y: 24%;
 }
 
 * {
@@ -22,24 +49,53 @@ body {
   position: relative;
 }
 
-/* Custom cursor using the hand image in ressources/ */
-:root {
-  --cursor-hand: url('ressources/hand.png') 16 16, auto;
+html.custom-cursor-active body,
+html.custom-cursor-active body * {
+  cursor: none !important;
 }
 
-/* Use the custom hand cursor site-wide, with sensible fallbacks for interactive elements */
-html, body, .app-shell {
-  cursor: var(--cursor-hand);
+.custom-hand-cursor {
+  --cursor-x: -120px;
+  --cursor-y: -120px;
+  --cursor-scale: 1;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--cursor-width);
+  height: var(--cursor-height);
+  pointer-events: none;
+  background-image: var(--cursor-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform: translate3d(calc(var(--cursor-x) - var(--cursor-offset-x)), calc(var(--cursor-y) - var(--cursor-offset-y)), 0) scale(var(--cursor-scale));
+  transform-origin: var(--cursor-origin-x) var(--cursor-origin-y);
+  opacity: 0;
+  transition: opacity 160ms ease, filter 160ms ease;
+  z-index: 9999;
+  will-change: transform;
+  filter: drop-shadow(0 10px 24px rgba(244, 160, 200, 0.4));
 }
 
-/* For interactive controls prefer pointer fallback (keeps expected affordance) */
-.love-control-button,
-.big-next-btn,
-.photo-card,
-.photo-lightbox-close,
-button,
-a {
-  cursor: url('ressources/hand.png') 16 16, pointer;
+.custom-hand-cursor[data-hidden="false"] {
+  opacity: 1;
+}
+
+.custom-hand-cursor[data-active="true"] {
+  --cursor-scale: 0.9;
+}
+
+.custom-hand-cursor[data-variant="interactive"] {
+  filter: drop-shadow(0 12px 26px rgba(255, 150, 190, 0.55));
+}
+
+.custom-hand-cursor[data-variant="drag"] {
+  filter: drop-shadow(0 10px 20px rgba(220, 120, 180, 0.5));
+}
+
+.custom-hand-cursor[data-variant="dragging"] {
+  --cursor-scale: 0.85;
+  filter: drop-shadow(0 10px 20px rgba(200, 100, 160, 0.48));
 }
 
 @keyframes bgShift {
@@ -455,6 +511,10 @@ body,
   background: linear-gradient(90deg, var(--accent1), var(--accent2));
   box-shadow: inset 0 2px 4px rgba(91, 58, 69, 0.08);
   cursor: pointer;
+}
+
+.love-volume-slider {
+  width: min(160px, 100%);
 }
 
 .love-speed-slider::-webkit-slider-thumb {
