@@ -8,48 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dist/tailwind.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main id="app" role="main" aria-live="polite">
-    <!-- Container centré pour les phrases -->
-    <div id="card" class="card">
-      <div id="phrase" class="phrase"></div>
+  <canvas id="particles"></canvas>
+  <div id="root"></div>
 
-      <div id="controls" class="controls" role="toolbar" aria-label="Contrôles de la lettre">
-        <div class="ctrl-col">
-          <button id="prevBtn" type="button" class="ctrl-btn ctrl-circle" aria-label="Précédent">◀</button>
-        </div>
-        <div class="ctrl-col">
-          <button id="autoBtn" type="button" class="ctrl-btn ctrl-circle" aria-label="Lecture automatique" aria-pressed="false">Auto</button>
-        </div>
-        <div class="ctrl-col">
-          <input id="speedRange" type="range" min="10" max="150" value="45" aria-label="Vitesse de la machine à écrire">
-          <span class="ctrl-cap">Vitesse</span>
-        </div>
-        <div class="ctrl-col">
-          <button id="turboBtn" type="button" class="ctrl-btn ctrl-circle turbo-btn" aria-label="Mode turbo">Turbo</button>
-        </div>
-        <div class="ctrl-col">
-          <button id="restartBtn" type="button" class="ctrl-btn ctrl-circle" aria-label="Recommencer">Replay</button>
-        </div>
-        <div class="ctrl-col progress-col">
-          <div id="progress" class="progress">
-            <div id="progressBar" class="progress-bar"></div>
-          </div>
-          <span id="progressText" class="progress-text" aria-live="polite">1 / 1</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Canvas pour particules (coeurs/confettis) -->
-    <canvas id="particles"></canvas>
-  </main>
-
-  <button id="bigNextBtn" class="big-next-btn" type="button">Suivant 💖</button>
-
-  <footer class="signature" aria-label="Signature de la page">made with 💖 by Yasser</footer>
-
-  <script src="script.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.3/dist/framer-motion.umd.min.js"></script>
+  <script src="dist/unified-app.js"></script>
 </body>
 </html>

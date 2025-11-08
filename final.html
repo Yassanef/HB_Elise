@@ -1,105 +1,178 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Joyeux anniversaire • Élise</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Small overrides for this page */
-    body{ display:flex; align-items:center; justify-content:center; min-height:100vh; }
-    .final-page-wrap{ text-align:center; padding: 6vh 4vw; }
-    .final-title{
-      font-size: clamp(3.6rem, 12vw, 10rem);
-      font-weight:900;
-      color:var(--text);
-      letter-spacing:1.6px;
-      margin:0 0 0.6rem 0;
-      text-shadow: 0 8px 28px rgba(169,58,90,0.12), 0 2px 6px rgba(0,0,0,0.06);
-      transform-origin:center;
-      animation: finalPop 900ms cubic-bezier(.16,.9,.34,1) both;
-    }
-    @keyframes finalPop{
-      0%{ transform: translateY(8px) scale(0.96); opacity:0 }
-      60%{ transform: translateY(-6px) scale(1.05); opacity:1 }
-      100%{ transform: translateY(0) scale(1); opacity:1 }
-    }
-    .final-sub{
-      font-size: clamp(1.1rem, 2.6vw, 1.6rem);
-      color:var(--muted);
-      margin-bottom:1.6rem;
-    }
-    /* subtle sparkle line under title */
-    .sparkles{
-      display:block; height:28px; margin:0.6rem auto 1.2rem; width: min(560px, 85%); position:relative;
-    }
-    .sparkles::after{ content:''; position:absolute; left:0; right:0; height:2px; background: linear-gradient(90deg, rgba(255,255,255,0.45), rgba(248,200,220,0.8), rgba(255,255,255,0.45)); border-radius:2px; filter: blur(8px); opacity:0.85 }
-    .final-hearts-large{ font-size: clamp(2.8rem, 8vw, 6rem); margin-top:0.4rem }
-
-    /* Keep canvas on top but below text shadows */
-    #particles{ z-index: 25 }
-    .final-page-wrap{ z-index: 30 }
-
-    /* A gentle entrance for hearts/decoration */
-    .float-up{ animation: floatUp 2400ms ease-out both }
-    @keyframes floatUp{ 0%{ transform: translateY(20px); opacity:0 } 100%{ transform: translateY(0); opacity:1 } }
-
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="dist/tailwind.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <canvas id="particles"></canvas>
+
   <div class="final-page-wrap">
-    <h1 class="final-title">Joyeux bla bla...</h1>
-    <div class="final-sub">Que cette journée soit remplie de douceur et de sourires</div>
-    <div class="sparkles" aria-hidden="true"></div>
+    <h1 class="final-title">Joyeux anniversaire, Élise ✨</h1>
+    <p class="final-sub">Merci pour ces moments magiques, continuons d'écrire notre histoire.</p>
+    <span class="sparkles" aria-hidden="true"></span>
     <div class="final-hearts-large float-up" aria-hidden="true">💖 💖 💖</div>
-    <div class="final-actions" style="margin-top:1.2rem; display:flex; gap:18px; justify-content:center;">
-      <p style="margin:0">
-        <button class="btn btn-2 btn-2i" aria-label="Yes">Yes</button>
-      </p>
-      <p style="margin:0">
-        <button class="btn btn-2 btn-2j" aria-label="No">No</button>
-      </p>
+
+    <div class="final-actions">
+      <button type="button" class="btn btn-2 btn-2i" id="replayBtn" aria-label="Revenir à la lettre">Revenir</button>
+      <button type="button" class="btn btn-2 btn-2j" id="galleryBtn" aria-label="Voir les souvenirs">Souvenirs</button>
     </div>
+
+    <p class="final-note">Reviens à la lettre pour tout revivre, ou file vers nos souvenirs.</p>
   </div>
 
   <script>
-    // Minimal particles for confetti + hearts (lightweight copy of engine)
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext && canvas.getContext('2d');
-    const DPR = window.devicePixelRatio || 1;
-    function resize(){
-      canvas.width = innerWidth * DPR; canvas.height = innerHeight * DPR;
-      canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
-      if (ctx) ctx.setTransform(DPR,0,0,DPR,0,0);
-    }
-    addEventListener('resize', resize, {passive:true}); resize();
-
-    const particles = [];
-    function rand(min,max){ return Math.random()*(max-min)+min }
-    function createHeart(x,y){ particles.push({t:'h', x,y, vx:rand(-0.6,0.6), vy:rand(-1.0,-0.2), life:rand(2000,3800), s:rand(12,32), age:0, rot:rand(-1,1)}) }
-    function createConf(x,y){ particles.push({t:'c', x,y, vx:rand(-1,1), vy:rand(0.2,1.0), life:rand(2800,5200), s:rand(6,12), age:0, col:['#ffd6e0','#f6e7ff','#ffe9d6','#fef3c7','#f7d5f0'][Math.floor(Math.random()*5)], rot:rand(-2,2)}) }
-
-    let last=0; let running=true;
-    function tick(ts){ if(!last) last=ts; const dt=ts-last; last=ts; if(ctx) ctx.clearRect(0,0,innerWidth,innerHeight);
-      for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.age+=dt; const r=p.age/p.life; if(r>=1){ particles.splice(i,1); continue }
-        if(p.t==='h'){ p.x+=p.vx*(dt/16); p.y+=p.vy*(dt/16); p.vy-=0.002*(dt/16); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot + Math.sin(p.age/200)*0.06); const sc = 1 - r*0.25; ctx.scale(sc,sc);
-          ctx.beginPath(); ctx.fillStyle = `rgba(255,150,185,${1-r})`; ctx.moveTo(0, -p.s/6); ctx.bezierCurveTo(-p.s/2, -p.s/2, -p.s, p.s/6, 0, p.s); ctx.bezierCurveTo(p.s, p.s/6, p.s/2, -p.s/2, 0, -p.s/6); ctx.fill(); ctx.restore(); }
-        else { p.x+=p.vx*(dt/16); p.y+=p.vy*(dt/16); p.vy+=0.001*(dt/16); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot + p.age/600); ctx.globalAlpha = 1 - r*0.6; ctx.fillStyle = p.col; ctx.fillRect(-p.s/2, -p.s/2, p.s, p.s*0.6); ctx.restore(); }
+    (function () {
+      const canvas = document.getElementById('particles');
+      const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+      if (!canvas || !ctx) {
+        return;
       }
-      if(running) requestAnimationFrame(tick);
-    }
 
-    function start(){
-      // gentle initial burst
-      const cx = innerWidth/2, cy = innerHeight/2;
-      for(let i=0;i<30;i++) setTimeout(()=> createHeart(rand(0,innerWidth), -rand(0,200)), i*30);
-      for(let i=0;i<40;i++) setTimeout(()=> createConf(rand(0,innerWidth), -10 + rand(-60,30)), i*60);
+      const DPR = window.devicePixelRatio || 1;
+      const particles = [];
+      let lastTs = 0;
+
+      function resize() {
+        canvas.width = window.innerWidth * DPR;
+        canvas.height = window.innerHeight * DPR;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      }
+
+      function rand(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function createHeart(x, y) {
+        particles.push({
+          type: 'heart',
+          x,
+          y,
+          vx: rand(-0.6, 0.6),
+          vy: rand(-1.0, -0.2),
+          life: rand(2200, 4200),
+          size: rand(12, 30),
+          age: 0,
+          rot: rand(-0.6, 0.6)
+        });
+      }
+
+      function createConfetti(x, y) {
+        const palette = ['#ffd6e0', '#f6e7ff', '#ffe9d6', '#fef3c7', '#f7d5f0'];
+        particles.push({
+          type: 'confetti',
+          x,
+          y,
+          vx: rand(-1, 1),
+          vy: rand(0.2, 1.0),
+          life: rand(2800, 5200),
+          size: rand(6, 12),
+          age: 0,
+          rot: rand(-2, 2),
+          color: palette[Math.floor(Math.random() * palette.length)]
+        });
+      }
+
+      function tick(ts) {
+        if (!lastTs) lastTs = ts;
+        const dt = ts - lastTs;
+        lastTs = ts;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = particles.length - 1; i >= 0; i -= 1) {
+          const p = particles[i];
+          p.age += dt;
+          const ratio = p.age / p.life;
+          if (ratio >= 1) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          if (p.type === 'heart') {
+            p.x += p.vx * (dt / 16);
+            p.y += p.vy * (dt / 16);
+            p.vy -= 0.0018 * (dt / 16);
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot + Math.sin(p.age / 240) * 0.06);
+            const scale = 1 - ratio * 0.25;
+            ctx.scale(scale, scale);
+            const s = p.size;
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(255,150,185,${1 - ratio})`;
+            ctx.moveTo(0, -s / 6);
+            ctx.bezierCurveTo(-s / 2, -s / 2, -s, s / 6, 0, s);
+            ctx.bezierCurveTo(s, s / 6, s / 2, -s / 2, 0, -s / 6);
+            ctx.fill();
+            ctx.restore();
+          } else {
+            p.x += p.vx * (dt / 16);
+            p.y += p.vy * (dt / 16);
+            p.vy += 0.0012 * (dt / 16);
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot + p.age / 600);
+            ctx.globalAlpha = 1 - ratio * 0.6;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+          }
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      function celebrate() {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+
+        for (let i = 0; i < 40; i += 1) {
+          setTimeout(() => createHeart(rand(0, window.innerWidth), -rand(0, 200)), i * 28);
+        }
+        for (let i = 0; i < 48; i += 1) {
+          setTimeout(() => createHeart(cx + rand(-220, 220), cy + rand(-80, 160)), 600 + i * 36);
+        }
+        for (let i = 0; i < 70; i += 1) {
+          setTimeout(() => createConfetti(rand(0, window.innerWidth), rand(-40, 60)), i * 60);
+        }
+      }
+
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+      celebrate();
       requestAnimationFrame(tick);
-    }
-    start();
 
-  // small accessibility: clicks on the final page do nothing by default (keeps the view stable)
+      setInterval(() => {
+        if (Math.random() < 0.45) {
+          createHeart(rand(40, window.innerWidth - 40), window.innerHeight + 20);
+        }
+      }, 1400);
+
+      const replayBtn = document.getElementById('replayBtn');
+      if (replayBtn) {
+        replayBtn.addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+      }
+
+      const galleryBtn = document.getElementById('galleryBtn');
+      if (galleryBtn) {
+        galleryBtn.addEventListener('click', () => {
+          window.location.href = 'ressources/diaporama.html';
+        });
+      }
+    })();
   </script>
 </body>
 </html>

@@ -4,9 +4,9 @@
   "description": "",
   "main": "script.js",
   "scripts": {
-    "build:css": "tailwindcss -i ./src/tailwind.css -o ./dist/tailwind.css --minify",
-    "build:js": "babel ./src/diaporama.jsx --out-file ./dist/diaporama.js",
-    "build": "npm run build:css && npm run build:js"
+  "build:css": "tailwindcss -i ./src/tailwind.css -o ./dist/tailwind.css --minify",
+  "build:js": "babel ./src/unified-app.jsx --out-file ./dist/unified-app.js",
+  "build": "npm run build:css && npm run build:js"
   },
   "repository": {
     "type": "git",

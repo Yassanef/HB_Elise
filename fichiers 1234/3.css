@@ -1,0 +1,584 @@
+/* styles.css
+   Thème pastel romantique, responsive.
+   Les animations sont commentées pour faciliter les modifications.
+*/
+
+:root{
+  --bg1: #ffeaf0; /* crème pâle */
+  --bg2: #fff0f6; /* pêche très clair */
+  --accent1: #f8c8dc; /* rose clair */
+  --accent2: #e1c7ff; /* lavande douce */
+  --accent3: #ffd0d5; /* pêche rosé */
+  --text: #5a2f50; /* prune doux */
+  --muted: #8d6682;
+}
+
+*{box-sizing:border-box}
+html,body,#app{height:100%}
+body{
+  margin:0;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color:var(--text);
+  /* fallback color if image unavailable */
+  background-color: var(--bg1);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+  position:relative;
+}
+
+/* Légère animation de gradient de fond */
+@keyframes bgShift{
+  0%{background-position:0% 50%; transform: scale(1)}
+  50%{background-position:100% 50%; transform: scale(1.04)}
+  100%{background-position:0% 50%; transform: scale(1)}
+}
+/* Background animation removed to keep the image stable and readable.
+   If you want a moving gradient overlay, we can instead use a ::before overlay with an animated gradient. */
+/* We use pseudo-elements to layer the background image and animated overlay.
+   - body::before holds the static image (allows applying CSS filter)
+   - body::after holds a subtle animated gradient overlay (keeps the kawaii motion)
+*/
+body{
+  background-size: initial;
+}
+
+body::before{
+  content: '';
+  position: fixed;
+  inset: 0;
+  /* place the photo at the very back */
+  z-index: -3;
+  background-image: url('ressources/coeur.jpg');
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  /* Slightly darken and boost saturation for better contrast */
+  filter: brightness(0.95) saturate(1.12);
+}
+
+body::after{
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* animated pastel gradient overlay (semi-transparent) */
+  background: conic-gradient(from 180deg at 50% 50%, rgba(255,230,245,0.34), rgba(230,210,255,0.26), rgba(245,230,255,0.24), rgba(255,230,245,0.34));
+  background-size: 280% 280%;
+  animation: bgShift 20s ease-in-out infinite;
+}
+
+/* Carte centrale contenant la phrase */
+.card{
+  width:min(90%,900px);
+  max-width:900px;
+  padding:20px 32px;
+  border-radius:20px;
+  background: transparent;
+  box-shadow: none;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  position:absolute;
+  top:0;
+  left:50%;
+  transform:translateX(-50%);
+  height:100vh;
+}
+
+/* Police normale pour le texte principal */
+.phrase{
+  font-family: 'Segoe UI', system-sys, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(2.3rem, 6vw, 4.4rem);
+  line-height:1.5;
+  color:var(--text);
+  max-width:85%;
+  word-wrap:break-word;
+  font-weight: 400;
+  position:absolute;
+  top:40%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  width:100%;
+  z-index: 40;
+  text-shadow: 0 8px 22px rgba(255,210,230,0.42);
+}
+
+/* hint removed */
+
+/* Controls UI styles */
+.controls{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:nowrap;
+  position:fixed;
+  bottom:6%;
+  left:50%;
+  transform:translateX(-50%);
+  width: min(88%, 720px);
+  z-index:220;
+  font-family: inherit;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  background: rgba(255,255,255,0.14);
+  padding: 10px 16px;
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 36px rgba(90,46,64,0.22);
+  border:1px solid rgba(255,255,255,0.18);
+}
+.ctrl-col{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:66px; min-height:72px; }
+.ctrl-cap{
+  font-size:0.95rem;
+  color:#6a4860;
+  opacity:0.95;
+  text-shadow:0 1px 2px rgba(255,255,255,0.35);
+  /* Apply a phrase-like treatment but adapted for small captions */
+  font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(.2,.9,.3,1), color 200ms ease;
+  /* subtle pop on first paint for consistency with phrase animation */
+  animation: softPop 520ms ease-out;
+}
+.ctrl-cap.small-muted{ font-size:0.82rem; color:var(--muted); opacity:0.95 }
+.ctrl-btn{
+  background: linear-gradient(135deg,#ff9fbf,#dca8ff);
+  border:1px solid rgba(255,255,255,0.18);
+  color:#ffffff;
+  padding:6px 12px;
+  border-radius:16px;
+  font-size:0.98rem;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(171,60,60,0.16);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 160ms;
+  min-width: 96px;
+  height: 44px;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.ctrl-btn{ /* subtle animated sheen to make them feel lively */
+  position:relative;
+  overflow:visible;
+}
+.ctrl-btn::after{
+  content:'';
+  position:absolute; left:-30%; top:-40%; width:160%; height:180%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+  transform: rotate(25deg) translateX(-120%);
+  transition: transform 850ms cubic-bezier(.2,.9,.2,1), opacity 450ms;
+  opacity:0.0;
+  pointer-events:none;
+}
+.ctrl-btn:hover::after{ transform: rotate(25deg) translateX(0%); opacity:0.85; }
+.ctrl-btn:hover{ transform:translateY(-4px); box-shadow: 0 20px 40px rgba(171,60,60,0.28); }
+.ctrl-btn:active{ transform:translateY(2px); box-shadow: 0 6px 16px rgba(171,60,60,0.18); }
+.ctrl-btn.primary{ background: linear-gradient(135deg,#ff9fbf,#dca8ff); color:#ffffff; font-weight:600 }
+.ctrl-btn[aria-pressed="false"]{ opacity:0.8 }
+.ctrl-btn.active{ filter: brightness(1.05); box-shadow: 0 20px 40px rgba(171,60,60,0.28); }
+
+.ctrl-col input[type="range"]{
+  width:140px;
+}
+
+/* Square button helper: JS will set inline width/height for perfect square.
+   Provide a fallback style so text is centered when square sizing applied. */
+.ctrl-btn.square{
+  padding: 0 8px; /* small horizontal padding; actual width will be overridden by JS */
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* Big cute next button */
+ .big-next-btn{
+  position: fixed;
+  padding: 20px 40px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg,#ff9fbf,#dca8ff);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(248, 200, 220, 0.4);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.4s ease-in-out, filter 0.3s ease;
+  z-index: 200;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: block;
+  min-width: 200px;
+  opacity: 0;
+  pointer-events: none;
+  animation: floatyPulse 4.8s ease-in-out infinite;
+ }
+
+
+   .big-next-btn{
+    /* allow rotation from JS via --rot variable; hover will add translate/scale while preserving rotation */
+    transform: rotate(var(--rot, 0deg));
+   }
+
+   .big-next-btn:hover{
+    /* playful hover similar to circular buttons: lift and stronger shadow */
+    animation: none;
+    transform: rotate(var(--rot, 0deg)) translateY(-6px) scale(1.06);
+    box-shadow: 0 16px 40px rgba(220, 140, 220, 0.68);
+    filter: brightness(1.02);
+   }
+
+   .big-next-btn:active{
+    animation: none;
+    transform: rotate(var(--rot, 0deg)) translateY(4px) scale(0.96);
+    box-shadow: 0 6px 16px rgba(171,60,60,0.24);
+    filter: brightness(0.98);
+   }
+
+  .big-next-btn:focus-visible{
+    animation: none;
+    transform: rotate(var(--rot, 0deg)) translateY(-4px) scale(1.04);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.45), 0 12px 30px rgba(220, 140, 220, 0.6);
+  }
+
+  /* Visual indicator when the big button is the final action */
+  .big-next-btn.final-mode{
+    cursor: pointer;
+    outline: none;
+    --final-glow: 0 10px 30px rgba(248,140,180,0.18);
+    box-shadow: var(--final-glow), 0 6px 18px rgba(171,60,60,0.08);
+  }
+  .big-next-btn.final-mode:hover{
+    transform: rotate(var(--rot, 0deg)) translateY(-8px) scale(1.08);
+    box-shadow: 0 18px 46px rgba(248,140,180,0.32), 0 8px 24px rgba(171,60,60,0.12);
+  }
+  .big-next-btn.final-mode:focus{
+    box-shadow: 0 18px 46px rgba(248,140,180,0.28), 0 8px 24px rgba(171,60,60,0.12);
+  }
+
+ .big-next-btn.hidden{
+  display: none !important;
+ }
+
+/* Focus visible for accessibility */
+.ctrl-btn:focus{ outline:3px solid rgba(232,214,255,0.6); outline-offset:3px }
+
+ .control-group{ display:flex; align-items:center; gap:8px; }
+.label-inline{ font-size:0.85rem; color:var(--muted) }
+.range-group input[type="range"]{ width:160px }
+.control-group input[type="checkbox"]{ width:18px; height:18px; accent-color: #f4a7c4 }
+.control-group input[type="range"]{ accent-color: var(--accent1); height:28px }
+
+/* Range (kawaii pastel) */
+input[type="range"]{
+  appearance: none;
+  -webkit-appearance: none;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  height: 12px; border-radius: 999px;
+  box-shadow: inset 0 2px 4px rgba(91,58,69,0.08);
+}
+input[type="range"]::-webkit-slider-runnable-track{
+  height:12px; border-radius:999px; background: linear-gradient(90deg, var(--accent1), var(--accent2));
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, #fff, #ffe6f1);
+  border:1px solid rgba(91,58,69,0.12);
+  box-shadow: 0 4px 10px rgba(248, 200, 220, 0.6);
+  margin-top:-5px;
+}
+/* Firefox */
+input[type="range"]::-moz-range-track{
+  height:12px; border-radius:999px; background: linear-gradient(90deg, var(--accent1), var(--accent2));
+}
+input[type="range"]::-moz-range-thumb{
+  width:22px; height:22px; border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, #fff, #ffe6f1);
+  border:1px solid rgba(91,58,69,0.12);
+  box-shadow: 0 4px 10px rgba(248, 200, 220, 0.6);
+}
+input[type="range"]::-moz-range-progress{
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  height:12px; border-radius:999px;
+}
+
+/* Petite note sous les contrôles */
+.turbo-btn:hover{ transform: translateY(-4px) scale(1.03); filter: brightness(1.04); }
+.turbo-btn:active{ transform: translateY(1px) scale(0.98); }
+.turbo-btn.active{ filter: brightness(1.08); box-shadow: 0 22px 46px rgba(171,60,60,0.32); background: linear-gradient(135deg,#ff9fbf,#dca8ff); }
+
+.progress{ width:120px; height:8px; background:rgba(255,255,255,0.4); border-radius:999px; overflow:hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5) }
+.progress-bar{ height:100%; width:0%; background: linear-gradient(90deg, var(--accent1), var(--accent2)); transition:width 450ms ease }
+.progress-text{ font-size:0.9rem; color:#6a4860; margin-left:6px }
+.progress-text{ white-space:nowrap; }
+
+.progress-col{
+  align-items:flex-start;
+  min-width:150px;
+}
+.progress-col .progress{ width:100%; }
+.progress-col .progress-text{ margin-left:0; margin-top:4px; }
+
+/* Signature small badge */
+.signature{
+  position:fixed;
+  right:18px;
+  bottom:6.4%;
+  z-index:230;
+  font-size:0.86rem;
+  color:#5b3a45;
+  background: rgba(255,255,255,0.76);
+  padding:6px 14px;
+  border-radius:999px;
+  box-shadow: 0 12px 24px rgba(90,46,64,0.18);
+  backdrop-filter: blur(6px);
+  font-weight:600;
+  letter-spacing:0.2px;
+}
+
+/* Animation d'apparition combinée: fondu + slide depuis le bas + léger zoom */
+@keyframes fadeSlideUp{
+  0%{opacity:0; transform:translate(-50%, calc(-50% + 18px)) scale(0.98);}
+  60%{opacity:1; transform:translate(-50%, calc(-50% - 6px)) scale(1.03);}
+  100%{opacity:1; transform:translate(-50%, -50%) scale(1);}
+}
+
+/* Petite oscillation / tremblement mignon */
+@keyframes cuteShake{
+  0%{transform: translate(-50%, -50%) rotate(0deg)}
+  20%{transform: translate(-50%, -50%) translateX(-3px) rotate(-1deg)}
+  40%{transform: translate(-50%, -50%) translateX(2px) rotate(1deg)}
+  60%{transform: translate(-50%, -50%) translateX(-1px) rotate(-0.5deg)}
+  80%{transform: translate(-50%, -50%) translateX(1px) rotate(0.5deg)}
+  100%{transform: translate(-50%, -50%) rotate(0deg)}
+}
+
+/* Zoom doux à l'apparition */
+@keyframes softPop{
+  from{transform:translate(-50%, -50%) scale(0.95); opacity:0}
+  to{transform:translate(-50%, -50%) scale(1); opacity:1}
+}
+
+/* Pulse pour les mots importants */
+@keyframes pulseImportant{
+  0%{transform:scale(1); filter: drop-shadow(0 2px 0 rgba(248,200,220,0.15));}
+  50%{transform:scale(1.08);}
+  100%{transform:scale(1);}
+}
+
+/* Classes JS appliquées dynamiquement */
+.show-phrase{
+  animation: softPop 700ms ease-out;
+}
+
+/* Important words (pulsent) */
+.important{
+  display:inline-block;
+  color:#ffffff;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin:0 3px;
+  font-weight:600;
+  animation: pulseImportant 1400ms ease-in-out infinite;
+}
+
+/* Typewriter cursor */
+.typewriter-caret{
+  display:inline-block;
+  width:2px;
+  height:1.05em;
+  background:var(--text);
+  margin-left:6px;
+  vertical-align:middle;
+  animation: blinkCaret 900ms steps(1) infinite;
+}
+@keyframes blinkCaret{50%{opacity:0}}
+
+/* Styles finaux du message final */
+.final-message{
+  /* Much larger, centered and prominent final message */
+  font-size: clamp(3.6rem, 12vw, 10rem);
+  letter-spacing:2px;
+  font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+  animation: pulseImportant 900ms ease-in-out infinite;
+  position:fixed;
+  top:50% !important;
+  left:50% !important;
+  transform:translate(-50%, -50%) !important;
+  /* allow the final message to use most of the viewport width and avoid breaking words */
+  width: auto !important;
+  max-width: 95vw !important;
+  z-index:300;
+  text-align:center;
+  color: var(--text);
+  text-shadow: 0 4px 18px rgba(169,58,90,0.12), 0 1px 4px rgba(0,0,0,0.08);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* Hearts line under the final message: ensure they're on their own centered line */
+.final-message .final-hearts{
+  display:block;
+  margin-top:0.6rem;
+  font-size: clamp(2.2rem, 6vw, 6rem);
+  line-height:1;
+  letter-spacing:0.02em;
+  text-align:center;
+}
+
+/* Button snippets imported from user (rounded circular buttons) */
+.btn{ display:inline-flex; align-items:center; justify-content:center; border:none; cursor:pointer; font-weight:700; color:#fff; }
+.btn:focus{ outline: 3px solid rgba(232,214,255,0.6); outline-offset:4px }
+.btn-2{ background: linear-gradient(135deg,#ff9fbf,#dca8ff); box-shadow: 0 8px rgba(171,60,60,0.12); padding:0 }
+
+/* Button 2i */
+.btn-2i {
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  padding: 0;
+  position: relative;
+  top: 0;
+  box-shadow: 0 6px rgba(171,60,60,0.12);
+}
+
+.btn-2i:hover {
+  box-shadow: 0 4px #ab3c3c;
+  top: 2px;
+}
+
+.btn-2i:active {
+  box-shadow: 0 0 #ab3c3c;
+  top: 6px;
+}
+
+/* Button 2j */
+.btn-2j {
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  padding: 0;
+  position: relative;
+  top: 0;
+  box-shadow: 0 6px rgba(171,60,60,0.12);
+}
+
+.btn-2j:hover {
+  box-shadow: 0 8px #ab3c3c;
+  top: -2px;
+}
+
+.btn-2j:active {
+  box-shadow: 0 0 #ab3c3c;
+  top: 6px;
+}
+
+/* Control-circle: smaller round controls used in the toolbar.
+   Keeps final page buttons intact while making toolbar buttons round and uniform. */
+.ctrl-circle{
+  width:56px !important;
+  height:56px !important;
+  min-width:56px !important;
+  min-height:56px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box !important;
+}
+
+/* Quelques éléments décoratifs CSS (petits coeurs/étoiles via pseudo éléments) */
+.card::before,
+.card::after{
+  content:'';
+  position:absolute;
+  pointer-events:none;
+  transition: transform 1.6s ease;
+}
+
+.card::before{
+  width:540px;
+  height:540px;
+  top:50%;
+  left:50%;
+  transform: translate(-50%, -56%);
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 72%, rgba(255,255,255,0) 100%);
+  filter: blur(18px);
+  z-index:-1;
+}
+
+.card::after{
+  width:320px;
+  height:320px;
+  top:52%;
+  left:50%;
+  transform: translate(-50%, -50%) rotate(12deg);
+  background: radial-gradient(circle, rgba(255,182,219,0.16) 0%, rgba(255,210,235,0.06) 70%, rgba(255,255,255,0) 100%);
+  filter: blur(28px);
+  z-index:-2;
+}
+
+/* Responsive tweaks */
+@media (max-width:480px){
+  .card{ padding:28px 18px; border-radius:14px; }
+  .controls{ gap:10px; bottom:10%; flex-wrap:wrap; width:92%; }
+  .phrase{ font-size: clamp(1.8rem, 5vw, 3.2rem); top:35%; }
+}
+
+/* Additional responsive breakpoint for medium screens */
+@media (max-width:760px){
+  .controls{ gap:10px; bottom:8%; flex-wrap:wrap; width:92%; }
+  .control-group input[type="range"]{ width:120px; }
+}
+
+/* Canvas full-screen for particules */
+#particles{
+  position:fixed; inset:0; pointer-events:none; width:100%; height:100%; z-index:30;
+}
+
+/* Fond "je t'aime" dispersé */
+.love-bg{
+  position:fixed; inset:0; pointer-events:none;
+  /* keep love words behind the UI but above the photo */
+  z-index: -2;
+}
+.love-word{
+  position:absolute;
+  color: rgba(255,250,255,0.52);
+  user-select:none; white-space:nowrap;
+  animation: loveFloat 26s ease-in-out infinite alternate;
+  font-weight:600;
+  filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+  letter-spacing:0.4px;
+  pointer-events:none;
+  font-family: 'Dancing Script', 'Brush Script MT', cursive;
+  font-style: italic;
+  text-shadow: none;
+}
+@keyframes loveFloat{
+  from{ transform: translateY(-6px) }
+  to{ transform: translateY(6px) }
+}
+
+@keyframes floatyPulse{
+  0%{ transform: rotate(var(--rot, 0deg)) translateY(0); box-shadow: 0 8px 20px rgba(248, 200, 220, 0.4); }
+  50%{ transform: rotate(var(--rot, 0deg)) translateY(-8px) scale(1.03); box-shadow: 0 18px 36px rgba(248, 200, 220, 0.48); }
+  100%{ transform: rotate(var(--rot, 0deg)) translateY(0); box-shadow: 0 8px 20px rgba(248, 200, 220, 0.4); }
+}
+
+/* Notes pour développeur:
+ - Modifier l'animation fadeSlideUp pour changer vitesse/déplacement.
+ - La classe .important applique pulse; vous pouvez changer timing dans pulseImportant.
+ - La machine à écrire est gérée dans script.js; activez-la en mettant "typewriter:true" sur une phrase.
+*/
