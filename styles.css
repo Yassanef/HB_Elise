@@ -22,6 +22,26 @@ body {
   position: relative;
 }
 
+/* Custom cursor using the hand image in ressources/ */
+:root {
+  --cursor-hand: url('ressources/hand.png') 16 16, auto;
+}
+
+/* Use the custom hand cursor site-wide, with sensible fallbacks for interactive elements */
+html, body, .app-shell {
+  cursor: var(--cursor-hand);
+}
+
+/* For interactive controls prefer pointer fallback (keeps expected affordance) */
+.love-control-button,
+.big-next-btn,
+.photo-card,
+.photo-lightbox-close,
+button,
+a {
+  cursor: url('ressources/hand.png') 16 16, pointer;
+}
+
 @keyframes bgShift {
   0% {
     background-position: 0% 50%;
