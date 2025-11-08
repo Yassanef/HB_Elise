@@ -390,8 +390,10 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
       const slots = Math.max(1, items.length);
       const verticalRoom = Math.max(zoneHeight - margin * 2, zoneHeight * 0.62);
       const slotHeight = verticalRoom / slots;
-      const baseWidth = Math.min(zoneWidth, Math.max(200, Math.max(zoneWidth * 0.98, zoneWidth - 6)));
-      const heightBySlots = Math.min(slotHeight, Math.max(160, slotHeight - margin * 0.3));
+  // Ensure card width never exceeds viewport minus some padding so images never overflow screen
+  const viewportSafeMax = (typeof window !== 'undefined') ? Math.max(240, window.innerWidth - 120) : zoneWidth;
+  const baseWidth = Math.min(zoneWidth, Math.max(160, Math.min(viewportSafeMax, Math.max(zoneWidth * 0.98, zoneWidth - 6))));
+  const heightBySlots = Math.min(slotHeight, Math.max(160, slotHeight - margin * 0.3));
       const heightByWidth = baseWidth * 1.34;
       let cardHeight = Math.min(heightByWidth, heightBySlots);
       if (heightBySlots >= 220) {
@@ -592,11 +594,12 @@ const UnifiedLoveApp = () => {
   const pendingRevealRef = useRef(null);
   const particles = useParticleEngine();
 
-  // Preload all photos only when user reaches the first slide that contains photos.
+  // Preload all photos once the user reaches the 2nd slide (index 1).
+  // This starts the full preload earlier to reduce perceived latency.
   useEffect(() => {
     if (preloadedPhotosRef.current) return;
-    if (typeof firstPhotoSlideIndex === 'undefined' || firstPhotoSlideIndex < 0) return;
-    if (currentIndex >= firstPhotoSlideIndex) {
+    const triggerIndex = 1; // start full preload at second slide (index 1)
+    if (currentIndex >= triggerIndex) {
       preloadedPhotosRef.current = true;
       allPhotos.forEach((photo) => {
         const img = new Image();
