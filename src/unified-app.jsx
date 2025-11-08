@@ -476,6 +476,12 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
     setLoadedMap({});
   }, [photos]);
 
+  // memoized handler to mark image as loaded
+  const handleImageLoad = useCallback((fileName) => {
+    if (!fileName) return;
+    setLoadedMap((m) => (m[fileName] ? m : { ...m, [fileName]: true }));
+  }, []);
+
   return (
     <div ref={stageRef} className="photo-stage" aria-hidden="true">
       <div ref={leftZoneRef} className="photo-zone photo-zone-left">
@@ -495,23 +501,25 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
               animate={{ opacity: 1, x: 0, y: 0, scale: item.scale, rotate: item.rotate }}
               exit={{ opacity: 0, x: -46, y: -24, scale: item.scale * 0.88, rotate: item.rotate - 4 }}
               transition={{ type: "spring", stiffness: 120, damping: 18, delay: item.delay }}
-              onDoubleClick={() => onOpenLightbox?.(item.photo)}
+              onDoubleClick={(e) => { e.stopPropagation(); onOpenLightbox?.(item.photo); }}
               title="Double-clique pour agrandir"
             >
               <div className="photo-frame">
                 <motion.img
                   src={`ressources/photos_mims/${item.photo.fileName}`}
                   alt="Souvenir a deux"
-                  loading="eager"
+                  loading={item.delay === 0 ? 'eager' : 'lazy'}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: loadedMap[item.photo.fileName] ? 1 : 0 }}
                   transition={{ duration: 0.46, ease: 'easeOut', delay: item.delay }}
-                  onLoad={() => setLoadedMap((m) => ({ ...m, [item.photo.fileName]: true }))}
+                  onLoad={() => handleImageLoad(item.photo.fileName)}
+                  onDoubleClick={(e) => { e.stopPropagation(); onOpenLightbox?.(item.photo); }}
                   onError={(event) => {
                     if (event.target.dataset.altTried) return;
                     event.target.dataset.altTried = "true";
                     event.target.src = `ressources/photos_mims/${item.photo.altFileName}`;
                   }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
               <span className="photo-glow" aria-hidden="true" />
@@ -537,19 +545,25 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
               animate={{ opacity: 1, x: 0, y: 0, scale: item.scale, rotate: item.rotate }}
               exit={{ opacity: 0, x: 46, y: -24, scale: item.scale * 0.88, rotate: item.rotate + 4 }}
               transition={{ type: "spring", stiffness: 120, damping: 18, delay: item.delay }}
-              onDoubleClick={() => onOpenLightbox?.(item.photo)}
+              onDoubleClick={(e) => { e.stopPropagation(); onOpenLightbox?.(item.photo); }}
               title="Double-clique pour agrandir"
             >
               <div className="photo-frame">
-                <img
+                <motion.img
                   src={`ressources/photos_mims/${item.photo.fileName}`}
                   alt="Souvenir a deux"
-                  loading="lazy"
+                  loading={item.delay === 0 ? 'eager' : 'lazy'}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: loadedMap[item.photo.fileName] ? 1 : 0 }}
+                  transition={{ duration: 0.46, ease: 'easeOut', delay: item.delay }}
+                  onLoad={() => handleImageLoad(item.photo.fileName)}
+                  onDoubleClick={(e) => { e.stopPropagation(); onOpenLightbox?.(item.photo); }}
                   onError={(event) => {
                     if (event.target.dataset.altTried) return;
                     event.target.dataset.altTried = "true";
                     event.target.src = `ressources/photos_mims/${item.photo.altFileName}`;
                   }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
               <span className="photo-glow" aria-hidden="true" />
