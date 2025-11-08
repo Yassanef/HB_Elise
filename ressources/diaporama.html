@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini diaporama amoureux</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="../dist/tailwind.css" />
+
+  <!-- Background harmonisé avec coeur.jpg -->
+  <style>
+    body {
+      min-height: 100vh;
+      font-family: "Inter", system-ui, sans-serif;
+      color: #4a2241;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background: radial-gradient(circle at 20% 20%, rgba(255, 235, 248, 0.8), rgba(255, 228, 240, 0.4)),
+                  radial-gradient(circle at 80% 10%, rgba(222, 214, 255, 0.65), rgba(243, 225, 255, 0.35)),
+                  linear-gradient(135deg, rgba(255, 230, 243, 0.9), rgba(243, 232, 255, 0.9));
+      filter: brightness(0.96) saturate(1.05);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: conic-gradient(from 180deg at 50% 50%,
+                                 rgba(255,230,245,0.34),
+                                 rgba(230,210,255,0.26),
+                                 rgba(245,230,255,0.24),
+                                 rgba(255,230,245,0.34));
+      background-size: 280% 280%;
+      animation: bgShift 20s ease-in-out infinite;
+    }
+    @keyframes bgShift {
+      0%   { background-position: 0% 50%; transform: scale(1);   }
+      50%  { background-position: 100% 50%; transform: scale(1.04); }
+      100% { background-position: 0% 50%; transform: scale(1);   }
+    }
+    .glow::before,
+    .glow::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      transition: transform 1.6s ease;
+    }
+    .glow::before {
+      width: 520px;
+      height: 520px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -58%);
+      background: radial-gradient(circle,
+        rgba(255,255,255,0.20) 0%,
+        rgba(255,255,255,0.05) 72%,
+        rgba(255,255,255,0) 100%);
+      filter: blur(18px);
+      z-index: -1;
+    }
+    .glow::after {
+      width: 300px;
+      height: 300px;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(10deg);
+      background: radial-gradient(circle,
+        rgba(255,190,225,0.16) 0%,
+        rgba(255,210,235,0.06) 70%,
+        rgba(255,255,255,0) 100%);
+      filter: blur(26px);
+      z-index: -2;
+    }
+  </style>
+
+  <!-- React + ReactDOM + Framer Motion -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.3/dist/framer-motion.js"></script>
+  <script src="../dist/diaporama.js" defer></script>
+</head>
+
+<body class="bg-blush/80 backdrop-blur-sm">
+  <div id="root" class="relative z-10 flex items-center justify-center min-h-screen px-4 py-10"></div>
+
+  <!-- App logic compiled via Babel CLI lives in ../dist/diaporama.js -->
+</body>
+</html>

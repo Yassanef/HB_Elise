@@ -1,0 +1,29 @@
+{
+  "name": "hb_elise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./dist/tailwind.css --minify",
+    "build:js": "babel ./src/diaporama.jsx --out-file ./dist/diaporama.js",
+    "build": "npm run build:css && npm run build:js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yassanef/HB_Elise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Yassanef/HB_Elise/issues"
+  },
+  "homepage": "https://github.com/Yassanef/HB_Elise#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.28.3",
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "tailwindcss": "^3.4.14"
+  }
+}

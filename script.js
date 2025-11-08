@@ -1,83 +1,56 @@
 /* script.js
-   Contrôle l'affichage phrase par phrase, interactions Entrée/clic, effets sonores et particules.
-   Le tableau `phrases` est facile à modifier. Chaque entrée peut être soit une string simple,
-   soit un objet { text: '...', typewriter: true|false, important: ['mot1','mot2'] }
+   Version retravaillée : machine à écrire, bouton Suivant volant, turbo, auto-play, fond "je t'aime".
+   Toutes les fonctionnalités audio ont été supprimées comme demandé.
 */
 
 // --- Texte modifiable: remplacer / ajouter des phrases ici ---
-const phrases = [
-  `Pour ma copine d'amour, Élise.`,
-  `T'es vraiment la personne la plus importante pour moi, et jsuis tellement, tellement heureux de t’avoir trouvée.`,
-  `T'es la première pensée qui me traverse la tête le matin, et la dernière quand jme couche.`,
-  `Quand j’ai quelque chose de nv dans ma vie, c'est toujours toi la première personne à qui j’ai envie de le dire, et quand jpense à toi, j’ai ce sourire un peu bête.`,
-  `Tu me rends tellement heureux, aussi t’es tlm attentionnée, douce (dans tous les sens du terme) et mignonne.`,
-  `Même quand on se prend la tête, tu restes tjrs ma princesse d’amour, et je t’aimerai pour toujours.`,
-  `J’adore à quel point t’es motivée, déterminée (ou inflexible, ou tête dure comme tu veux) dans ce que tu fais, et tu veux réussir, ce qui me rend fier d’être avec toi.`,
-  `Aussi parce que t’es super belle (jsp si j'lai dit), et j’adore qu’on puisse rire de tout (ou presque).`,
-  `Tu essaies même les trucs que j’aime, juste pour me faire plaisir, et tu me rends tellement heureux, jveux passer le reste de ma vie avec toi.`,
-  `Quand jte regarde, jressens trop d’amour dans le ventre, et j’ai juste envie de t’embrasser.`,
-  `T’es la meilleure copine que je pouvais rêver d’avoir, et jsuis super reconnaissant pour ces 8 mois qu’on a passés ensemble.`,
-  `J’espère qu’il y en aura encore des dizaines d’autres, toujours avec toi, et je t’aime plus que tout.`,
-  `- Yasser`
+let phrases = [
+  { text: "Pour ma copine d'amour, Elise", typewriter: true },
+  { text: "T'es vraiment la personne la plus importante pour moi, et jsuis tellement, tellement heureux de t'avoir trouvee", typewriter: true },
+  { text: "T'es la premiere pensee qui me traverse la tete le matin, et la derniere quand jme couche", typewriter: true },
+  { text: "Quand j'ai quelque chose de nv dans ma vie, c'est toujours toi la premiere personne a qui j'ai envie de le dire, et quand jpense a toi, j'ai ce sourire un peu bete", typewriter: true },
+  { text: "Tu me rends tellement heureux, aussi t'es tlm attentionnee, douce (dans tous les sens du terme) et mignonne", typewriter: true },
+  { text: "Meme quand on se prend la tete, tu restes tjrs ma princesse d'amour, et je t'aimerai pour toujours", typewriter: true },
+  { text: "J'adore a quel point t'es motivee, determinee (ou inflexible, ou tete dure comme tu veux) dans ce que tu fais, et tu veux reussir, ce qui me rend fier d'etre avec toi", typewriter: true },
+  { text: "Aussi parce que t'es super belle (jsp si jlai dit), et j'adore qu'on puisse rire de tout (ou presque)", typewriter: true },
+  { text: "Tu essaies meme les trucs que j'aime, juste pour me faire plaisir, et tu me rends tellement heureux, jveux passer le reste de ma vie avec toi", typewriter: true },
+  { text: "Quand jte regarde, jressens trop d'amour dans le ventre, et j'ai juste envie de t'embrasser", typewriter: true },
+  { text: "T'es la meilleure copine que je pouvais rever d'avoir, et jsuis super reconnaissant pour ces 8 mois qu'on a passes ensemble", typewriter: true },
+  { text: "J'espere qu'il y en aura encore des dizaines d'autres, toujours avec toi, et je t'aime plus que tout", typewriter: true },
+  { text: "- Yasser", typewriter: true }
 ];
 // -----------------------------------------------------------
 
-const app = document.getElementById('app');
 const phraseEl = document.getElementById('phrase');
-const hint = document.getElementById('hint');
 const canvas = document.getElementById('particles');
-const ctx = canvas.getContext && canvas.getContext('2d');
+const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
 
 let idx = 0;
-let busy = false; // Empêche double-advancement
-let soundEnabled = true;
-let autoplayEnabled = false; // si true, avance automatiquement
-let autoDelay = 3000; // ms
+let busy = false;
+let autoplayEnabled = false;
+let autoDelay = 2800;
 let autoTimer = null;
-let typewriterSpeed = 45; // vitesse globale (modifiable par l'UI)
+let typewriterSpeed = 45;
+let turboMultiplier = 1;
+let typingRunId = 0;
+
+let prevBtn, bigNextBtn, restartBtn, autoBtn, speedRange, progressBar, progressText, turboBtn;
 
 // Resize canvas to cover viewport
 function resizeCanvas(){
+  if (!canvas || !ctx) return;
   canvas.width = innerWidth * devicePixelRatio;
   canvas.height = innerHeight * devicePixelRatio;
   canvas.style.width = innerWidth + 'px';
   canvas.style.height = innerHeight + 'px';
-  if (ctx) ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
 }
 addEventListener('resize', resizeCanvas, {passive:true});
 resizeCanvas();
 
-// --- Son doux (ding) sans fichier : WebAudio ---
-function playDing(){
-  if (!soundEnabled) return;
-  try{
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = 'sine';
-    o.frequency.value = 880; // fréquence aiguë douce
-    g.gain.value = 0;
-    o.connect(g);
-    g.connect(ac.destination);
-
-    const now = ac.currentTime;
-    g.gain.cancelScheduledValues(now);
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.08, now + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
-
-    o.start(now);
-    o.stop(now + 0.7);
-
-    // Fermer le context après un court délai
-    setTimeout(()=>{ if (ac.close) ac.close(); }, 900);
-  }catch(e){ /* fallback silencieux */ }
-}
-
 // --- Helper: mettre en évidence mots importants en enveloppant des <span class="important"> ---
 function highlightImportant(text, importantWords){
   if (!importantWords || importantWords.length===0) return text;
-  // Échapper regex
   importantWords.forEach(w=>{
     const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const re = new RegExp(`(${esc})`, 'gi');
@@ -86,84 +59,96 @@ function highlightImportant(text, importantWords){
   return text;
 }
 
-// --- Affiche la phrase indexée
 function showPhrase(i){
-  if (i < 0 || i >= phrases.length) return;
+  if (!phraseEl || i < 0 || i >= phrases.length) return;
   busy = true;
-  phraseEl.classList.remove('show-phrase');
-  phraseEl.classList.remove('shaky');
+  phraseEl.classList.remove('final-message','show-phrase','shaky');
   phraseEl.innerHTML = '';
 
-  // Supporter string ou objet
-  const entry = (typeof phrases[i] === 'string') ? { text: phrases[i], typewriter:false } : phrases[i];
-  let html = entry.text;
-  html = highlightImportant(html, entry.important || []);
+  if (bigNextBtn){
+    bigNextBtn.style.opacity = '0';
+    bigNextBtn.style.pointerEvents = 'none';
+  }
 
-  // Si machine à écrire demandée, écrire lettre par lettre
+  const entry = (typeof phrases[i] === 'string') ? { text: phrases[i], typewriter:false } : phrases[i];
+  const text = entry.text;
+  const myRun = ++typingRunId;
+
   if (entry.typewriter){
-    // On efface puis on tape
-    const text = entry.text;
-    phraseEl.innerHTML = '';
-    const words = text.split(' ');
-    // We'll reveal letter by letter for the whole string
-    let pos = 0;
-    const total = text.length;
     const caret = document.createElement('span');
     caret.className = 'typewriter-caret';
     phraseEl.appendChild(caret);
+    let pos = 0;
+    const total = text.length;
 
-  // Typing speed (ms per char). Controlled by global `typewriterSpeed` (UI modifiable)
-  const speed = typeof typewriterSpeed === 'number' ? typewriterSpeed : 45;
     function step(){
+      if (myRun !== typingRunId) return;
       if (pos > total){
-        // finished
         phraseEl.removeChild(caret);
-        // replace text with highlighted HTML to keep important spans
         phraseEl.innerHTML = highlightImportant(text, entry.important || []);
         finishShow();
         return;
       }
-      // Show substring
-      const sub = text.slice(0,pos);
-      phraseEl.innerHTML = sub.replace(/\n/g,'<br>');
+      const sub = text.slice(0,pos).replace(/\n/g,'<br>');
+      phraseEl.innerHTML = sub;
       phraseEl.appendChild(caret);
       pos++;
-      setTimeout(step, speed + Math.floor(Math.random()*18));
+      const base = typeof typewriterSpeed === 'number' ? typewriterSpeed : 45;
+      const delay = Math.max(1, Math.round(base * turboMultiplier));
+      setTimeout(step, delay + Math.floor(Math.random()*18));
     }
-    // Appliquer animation d'apparition sur le container (même si on tape)
+
     requestAnimationFrame(()=>{ phraseEl.classList.add('show-phrase'); });
-    playDing();
-    setTimeout(step, 120);
+    setTimeout(step, 100);
   } else {
-    // Pas de typewriter: afficher tout de suite avec HTML (important words wrapped)
-    phraseEl.innerHTML = html;
-    // Petite variation: appliquer shaky aléatoire pour un effet mignon
+    phraseEl.innerHTML = highlightImportant(text, entry.important || []);
     if (Math.random() < 0.45) phraseEl.classList.add('shaky');
     requestAnimationFrame(()=>{ phraseEl.classList.add('show-phrase'); });
-    // Donner un petit ding et finir
-    playDing();
-
-    // Optionnel: faire pulser certains mots (déjà géré par .important animation)
-    setTimeout(finishShow, 550);
+    setTimeout(finishShow, 500);
   }
 
   function finishShow(){
     busy = false;
-    // Si dernière phrase, lancer les effets finaux
-    if (i === phrases.length - 1){
-      setTimeout(triggerFinalEffects, 600);
+    if (bigNextBtn){
+      if (i < phrases.length - 1){
+        prepareNextButton(false);
+      } else {
+        prepareNextButton(true);
+      }
     }
-    // Si autoplay activé, lancer la prochaine phrase après autoDelay
     if (autoplayEnabled && i < phrases.length - 1){
       if (autoTimer) clearTimeout(autoTimer);
-      autoTimer = setTimeout(()=>{
-        next();
-      }, autoDelay);
+      autoTimer = setTimeout(()=>{ next(); }, autoDelay);
+    }
+    // small liveliness: occasionally emit a tiny heart burst after a phrase
+    if (Math.random() < 0.32){
+      // emit a few small hearts near the center
+      const cx = window.innerWidth/2 + (Math.random()*160 - 80);
+      const cy = window.innerHeight/2 + (Math.random()*80 - 40);
+      for (let k=0;k<3;k++) setTimeout(()=> createHeart(cx + (Math.random()*60-30), cy + (Math.random()*40-20)), k*80);
     }
   }
 }
 
-// Avancer à la phrase suivante (ou redémarrer si terminé)
+function prepareNextButton(isFinal){
+  if (!bigNextBtn) return;
+  if (isFinal){
+    bigNextBtn.dataset.final = 'true';
+    bigNextBtn.textContent = 'Fêter 🎉';
+    bigNextBtn.classList.add('final-mode');
+  } else {
+    delete bigNextBtn.dataset.final;
+    bigNextBtn.textContent = 'Suivant 💖';
+    bigNextBtn.classList.remove('final-mode');
+  }
+  moveButton();
+  requestAnimationFrame(()=>{
+    bigNextBtn.style.transition = 'opacity 0.4s ease-in-out';
+    bigNextBtn.style.opacity = '1';
+    bigNextBtn.style.pointerEvents = 'auto';
+  });
+}
+
 function next(){
   if (busy) return;
   if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
@@ -171,210 +156,241 @@ function next(){
   if (idx < phrases.length){
     showPhrase(idx);
   } else {
-    // Afficher le message final spécial
     showFinal();
   }
+  updateProgress();
 }
 
-// Previous
 function prev(){
   if (busy) return;
   if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
   if (idx > 0){
     idx--;
     showPhrase(idx);
+    updateProgress();
   }
 }
 
-// Replay current
-function replay(){
-  if (busy) return;
-  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
-  showPhrase(idx);
-}
-
-// Restart from beginning
 function restart(){
   if (busy) return;
   if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
   idx = 0;
+  typingRunId++;
   showPhrase(idx);
+  updateProgress();
 }
 
-// Afficher le message final avec particules
 function showFinal(){
-  // Ensure idx points to last phrase
   idx = Math.max(0, phrases.length - 1);
-  phraseEl.classList.remove('show-phrase');
   phraseEl.classList.add('final-message');
-  phraseEl.innerHTML = 'Joyeux anniversaire Élise ! 💖';
-  playDing();
-  playFinalMelody();
-  // Lancer particules coeurs + confettis
-  startParticles();
-  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
-}
-
-// Déclenché après la dernière phrase (petit délai)
-function triggerFinalEffects(){
-  // mettre un petit effet de pulse sur le texte final
-  // (lancement est fait par showFinal)
-}
-
-// Gérer interactions: Entrée et clic
-addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter'){
-    e.preventDefault();
-    if (idx === -1) { idx = 0; showPhrase(0); return; }
-    if (idx < phrases.length - 1) next();
-    else if (idx === phrases.length - 1) next();
+  phraseEl.innerHTML = 'Joyeux anniversaire Elise !<br><div class="final-hearts" aria-hidden="true">💖💖💖</div>';
+  if (bigNextBtn){
+    bigNextBtn.dataset.final = 'true';
+    bigNextBtn.textContent = 'Fêter 🎉';
+    bigNextBtn.classList.add('final-mode');
+    bigNextBtn.style.opacity = '1';
+    bigNextBtn.style.pointerEvents = 'auto';
   }
-  // flèches pour navigation
-  if (e.key === 'ArrowRight') next();
-  if (e.key === 'ArrowLeft') prev();
-});
+  startParticles();
+}
 
-// Clic sur le document pour avancer
-document.addEventListener('click', (e)=>{
-  // Ignore clicks on controls (works in browsers without composedPath)
-  const target = e.target;
-  if (target.closest && target.closest('#controls')) return;
-  if (idx < phrases.length - 1) next();
-  else if (idx === phrases.length - 1) next();
-});
+function initUI(){
+  prevBtn = document.getElementById('prevBtn');
+  bigNextBtn = document.getElementById('bigNextBtn');
+  restartBtn = document.getElementById('restartBtn');
+  autoBtn = document.getElementById('autoBtn');
+  speedRange = document.getElementById('speedRange');
+  progressBar = document.getElementById('progressBar');
+  progressText = document.getElementById('progressText');
 
-// Initialisation: afficher la première phrase en attente d'action (ou afficher la première automatiquement)
-// Par défaut on affiche la première phrase dès le chargement
-idx = 0;
-showPhrase(idx);
+  if (bigNextBtn && bigNextBtn.parentElement && bigNextBtn.parentElement.id === 'card'){
+    document.body.appendChild(bigNextBtn);
+  }
 
-// Setup UI controls bindings
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const replayBtn = document.getElementById('replayBtn');
-const soundBtn = document.getElementById('soundBtn');
-const restartBtn = document.getElementById('restartBtn');
-const autoToggle = document.getElementById('autoToggle');
-const speedRange = document.getElementById('speedRange');
-const progressBar = document.getElementById('progressBar');
-const progressText = document.getElementById('progressText');
+  if (prevBtn) prevBtn.addEventListener('click', e=>{ e.stopPropagation(); prev(); });
+  if (restartBtn) restartBtn.addEventListener('click', e=>{ e.stopPropagation(); restart(); });
+  if (autoBtn){
+    autoBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      autoplayEnabled = !autoplayEnabled;
+      autoBtn.setAttribute('aria-pressed', autoplayEnabled ? 'true' : 'false');
+      autoBtn.classList.toggle('active', autoplayEnabled);
+      if (!autoplayEnabled && autoTimer){
+        clearTimeout(autoTimer); autoTimer = null;
+      } else if (autoplayEnabled && !busy){
+        autoTimer = setTimeout(()=> next(), autoDelay);
+      }
+    });
+  }
+  if (speedRange){
+    const applySpeed = ()=>{
+      const min = Number(speedRange.min) || 10;
+      const max = Number(speedRange.max) || 150;
+      const value = Number(speedRange.value);
+      typewriterSpeed = Math.max(5, (max + min) - value);
+    };
+    speedRange.addEventListener('input', applySpeed);
+    applySpeed();
+  }
+  turboBtn = document.getElementById('turboBtn');
+  if (turboBtn){
+    turboBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      if (turboMultiplier === 1){
+        turboMultiplier = 0.01;
+        turboBtn.classList.add('active');
+      } else {
+        turboMultiplier = 1;
+        turboBtn.classList.remove('active');
+      }
+    });
+  }
+
+  if (bigNextBtn){
+    bigNextBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      if (bigNextBtn.dataset && bigNextBtn.dataset.final === 'true'){
+        // final action goes to the actual final page
+        window.location.href = 'final.html';
+        return;
+      }
+      next();
+    });
+  }
+
+  showPhrase(idx);
+  moveButton();
+  renderLoveBackground();
+  updateProgress();
+}
 
 function updateProgress(){
-  // clamp to last index for display (idx may briefly exceed last during transition)
+  if (!progressBar || !progressText) return;
   const cur = Math.min(Math.max(0, idx), Math.max(0, phrases.length - 1));
   const pct = ((cur + 1) / phrases.length) * 100;
-  if (progressBar) progressBar.style.width = Math.min(100, pct) + '%';
-  if (progressText) progressText.textContent = `${cur + 1} / ${phrases.length}`;
-}
-updateProgress();
-
-if (prevBtn) prevBtn.addEventListener('click', (e)=>{ e.stopPropagation(); prev(); updateProgress(); });
-if (nextBtn) nextBtn.addEventListener('click', (e)=>{ e.stopPropagation(); next(); updateProgress(); });
-if (replayBtn) replayBtn.addEventListener('click', (e)=>{ e.stopPropagation(); replay(); updateProgress(); });
-if (restartBtn) restartBtn.addEventListener('click', (e)=>{ e.stopPropagation(); restart(); updateProgress(); });
-if (soundBtn) soundBtn.addEventListener('click', (e)=>{
-  e.stopPropagation(); soundEnabled = !soundEnabled;
-  soundBtn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
-  soundBtn.textContent = soundEnabled ? '🔔' : '🔕';
-});
-if (autoToggle) autoToggle.addEventListener('change', (e)=>{ autoplayEnabled = !!autoToggle.checked; if (autoTimer) clearTimeout(autoTimer); if (autoplayEnabled){ /* schedule next if idle */ }});
-if (speedRange) speedRange.addEventListener('input', (e)=>{ typewriterSpeed = Number(speedRange.value); });
-
-// Update progress after each shown phrase (hook into finishShow by wrapping showPhrase)
-const originalShowPhrase = showPhrase;
-showPhrase = function(i){
-  originalShowPhrase(i);
-  setTimeout(updateProgress, 50);
-};
-
-// Final melody for celebration
-function playFinalMelody(){
-  if (!soundEnabled) return;
-  try{
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const now = ac.currentTime;
-    const notes = [880, 988, 1047, 988, 880];
-    const dur = 0.22;
-    notes.forEach((f, i)=>{
-      const o = ac.createOscillator();
-      const g = ac.createGain();
-      o.type = 'sine';
-      o.frequency.value = f;
-      o.connect(g);
-      g.connect(ac.destination);
-      const t = now + i * (dur);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.08, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.start(t);
-      o.stop(t + dur + 0.02);
-    });
-    setTimeout(()=>{ if (ac.close) ac.close(); }, (notes.length*dur + 300));
-  }catch(e){ }
+  progressBar.style.width = Math.min(100, pct) + '%';
+  progressText.textContent = `${cur + 1} / ${phrases.length}`;
 }
 
-// ---------------- Particules: coeurs + confettis pastel ----------------
-// Simple moteur de particules canvas: on crée deux types: hearts (float up) et confetti (falling)
+function moveButton(){
+  if (!bigNextBtn) return;
+  const rect = bigNextBtn.getBoundingClientRect();
+  const btnWidth = Math.max(rect.width, 220);
+  const btnHeight = Math.max(rect.height, 80);
+  const margin = 60;
 
+  const safeWidth = window.innerWidth - btnWidth - margin * 2;
+  const safeHeight = window.innerHeight - btnHeight - margin * 2;
+
+  if (safeWidth <= 0 || safeHeight <= 0){
+    bigNextBtn.style.left = '50%';
+    bigNextBtn.style.bottom = '24px';
+    bigNextBtn.style.top = 'auto';
+    bigNextBtn.style.transform = 'translateX(-50%)';
+    return;
+  }
+
+  let x = margin + Math.random() * safeWidth;
+  let y = margin + Math.random() * safeHeight;
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  const avoidRadius = 280;
+  const dx = x + btnWidth/2 - centerX;
+  const dy = y + btnHeight/2 - centerY;
+  const distance = Math.sqrt(dx*dx + dy*dy);
+  if (distance < avoidRadius){
+    if (y < centerY){
+      y = Math.max(margin, centerY - avoidRadius - btnHeight);
+    } else {
+      y = Math.min(window.innerHeight - btnHeight - margin, centerY + avoidRadius);
+    }
+  }
+  const rotation = (Math.random()*12 - 6).toFixed(2) + 'deg';
+  bigNextBtn.style.left = `${x}px`;
+  bigNextBtn.style.top = `${y}px`;
+  bigNextBtn.style.bottom = 'auto';
+  bigNextBtn.style.setProperty('--rot', rotation);
+}
+
+// Fond "je t'aime"
+function renderLoveBackground(){
+  const existing = document.querySelector('.love-bg');
+  if (existing) return;
+  const container = document.createElement('div');
+  container.className = 'love-bg';
+  const frag = document.createDocumentFragment();
+  const count = 30;
+  for (let i=0;i<count;i++){
+    const span = document.createElement('span');
+    span.className = 'love-word';
+    span.textContent = "je t'aime";
+    const xPct = Math.random()*100;
+    const yPct = Math.random()*100;
+    span.style.left = `${xPct}%`;
+    span.style.top = `${yPct}%`;
+  span.style.fontSize = (0.85 + Math.random()*1.35)+'rem';
+  span.style.opacity = (0.16 + Math.random()*0.24).toFixed(2);
+    span.style.animationDelay = (Math.random()*18).toFixed(2)+'s';
+    span.style.transform = `rotate(${(Math.random()*18-9).toFixed(2)}deg) scale(${(0.86 + Math.random()*0.24).toFixed(2)})`;
+    frag.appendChild(span);
+  }
+  container.appendChild(frag);
+  document.body.appendChild(container);
+}
+
+// Particules
 const particles = [];
 let running = false;
 
-function rand(min,max){ return Math.random()*(max-min)+min }
+function rand(min,max){ return Math.random()*(max-min)+min; }
 
 function createHeart(x, y){
-  const s = rand(10,26);
-  particles.push({ type:'heart', x, y, vx:rand(-0.3,0.3), vy:rand(-1.2,-0.4), life:rand(2200,4200), size:s, t:0, rot:rand(-0.4,0.4) });
+  particles.push({ type:'heart', x, y, vx:rand(-0.3,0.3), vy:rand(-1.1,-0.4), life:rand(2200,4200), size:rand(10,24), t:0, rot:rand(-0.4,0.4) });
 }
+
 function createConfetti(x, y){
-  const s = rand(6,12);
   const colors = ['#ffd6e0','#f6e7ff','#ffe9d6','#fef3c7','#f7d5f0'];
-  particles.push({ type:'conf', x, y, vx:rand(-0.6,0.6), vy:rand(0.4,1.2), life:rand(4200,7200), size:s, t:0, color: colors[Math.floor(Math.random()*colors.length)], rot:rand(-1,1) });
+  particles.push({ type:'conf', x, y, vx:rand(-0.6,0.6), vy:rand(0.4,1.2), life:rand(4200,7200), size:rand(6,11), t:0, color: colors[Math.floor(Math.random()*colors.length)], rot:rand(-1,1) });
 }
 
 let lastTime = 0;
 function tick(ts){
+  if (!ctx) return;
   if (!lastTime) lastTime = ts;
   const dt = ts - lastTime;
   lastTime = ts;
   ctx.clearRect(0,0, innerWidth, innerHeight);
-  const now = performance.now();
   for (let i = particles.length-1; i>=0; i--){
     const p = particles[i];
     p.t += dt;
     const lifeRatio = p.t / p.life;
     if (lifeRatio >= 1){ particles.splice(i,1); continue; }
     if (p.type === 'heart'){
-      // Heart floats up, fades
       p.x += p.vx * (dt/16);
       p.y += p.vy * (dt/16);
-      p.vy -= 0.002 * (dt/16); // slight acceleration up
+      p.vy -= 0.002 * (dt/16);
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot + Math.sin(p.t/200)*0.08);
       const scale = 1 - lifeRatio*0.3;
       ctx.scale(scale, scale);
-      // draw simple heart path
-      ctx.beginPath();
       const s = p.size;
-      ctx.moveTo(0, 0);
+      ctx.beginPath();
       ctx.fillStyle = `rgba(255, 150, 185, ${1-lifeRatio})`;
-      ctx.shadowColor = 'rgba(0,0,0,0.08)';
-      ctx.shadowBlur = 6;
       ctx.moveTo(0, -s/6);
       ctx.bezierCurveTo(-s/2, -s/2, -s, s/6, 0, s);
       ctx.bezierCurveTo(s, s/6, s/2, -s/2, 0, -s/6);
       ctx.fill();
       ctx.restore();
     } else {
-      // confetti falling
       p.x += p.vx * (dt/16);
       p.y += p.vy * (dt/16);
       p.vy += 0.002 * (dt/16);
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot + p.t/600);
-      ctx.fillStyle = p.color;
       ctx.globalAlpha = 1 - lifeRatio*0.6;
+      ctx.fillStyle = p.color;
       ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
       ctx.restore();
     }
@@ -385,29 +401,44 @@ function tick(ts){
 function startParticles(){
   if (!ctx) return;
   running = true;
-  // burst of hearts and confetti from center top
-  const cx = innerWidth/2, cy = innerHeight/2;
-  for (let i=0;i<26;i++){
-    setTimeout(()=> createHeart(cx + rand(-140,140), cy + rand(-40,120)), i*40);
-  }
-  for (let i=0;i<40;i++){
-    setTimeout(()=> createConfetti(rand(0,innerWidth), -10 + rand(-60,20)), i*60);
-  }
+  const cx = innerWidth/2;
+  const cy = innerHeight/2;
+  for (let i=0;i<60;i++) setTimeout(()=> createHeart(rand(0, innerWidth), -rand(0,200)), i*24);
+  for (let i=0;i<36;i++) setTimeout(()=> createHeart(cx + rand(-200,200), cy + rand(-60,140)), 800 + i*40);
+  for (let i=0;i<70;i++) setTimeout(()=> createConfetti(rand(0,innerWidth), -10 + rand(-80,30)), i*60);
   requestAnimationFrame(tick);
 }
 
-// Optionnel: un petit effet continu léger (quelques coeurs qui montent doucement)
 setInterval(()=>{
   if (Math.random() < 0.35) createHeart(rand(40, innerWidth-40), innerHeight + 20);
-}, 1200);
+}, 1300);
 
-// Accessibility: mettre le focus sur le document pour capter Entrée
-window.onload = ()=>{ document.body.tabIndex = -1; document.body.focus(); };
+window.addEventListener('keydown', e=>{
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    if (bigNextBtn && bigNextBtn.dataset && bigNextBtn.dataset.final === 'true'){
+      // final: follow the big button link
+      window.location.href = 'final.html';
+      return;
+    }
+    next();
+  }
+  if (e.key === 'ArrowRight') next();
+  if (e.key === 'ArrowLeft') prev();
+});
 
-/*
-  Commentaires pour maintenance:
-  - Pour ajouter/retirer la machine à écrire, modifiez la propriété "typewriter" pour la phrase cible dans le tableau `phrases`.
-  - Pour changer les mots qui pulsent, ajoutez-les au tableau "important" pour chaque phrase. Les mots sont comparés en insensible à la casse.
-  - Pour changer la vitesse du ding, modifiez la configuration dans playDing() (freq & envelope).
-  - Pour ajuster les particules: jouer avec createHeart/createConfetti et les timings dans startParticles().
-*/
+document.addEventListener('click', e=>{
+  // Disable click-to-advance on the document level. Only allow clicks on controls or bigNextBtn.
+  const target = e.target;
+  if (target.closest && (target.closest('#controls') || target.closest('#bigNextBtn') || target.closest('.ctrl-btn'))) return;
+  // otherwise ignore global clicks
+  e.stopPropagation();
+  e.preventDefault();
+});
+
+window.addEventListener('load', ()=>{
+  initUI();
+  document.body.tabIndex = -1;
+  document.body.focus();
+});
+
