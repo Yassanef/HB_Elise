@@ -295,6 +295,7 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
   const leftZoneRef = useRef(null);
   const rightZoneRef = useRef(null);
   const [layout, setLayout] = useState({ left: [], right: [] });
+  const [loadedMap, setLoadedMap] = useState({});
 
   const stageData = useMemo(() => {
     if (!Array.isArray(photos) || photos.length === 0) {
@@ -468,6 +469,11 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
     computeLayout();
   }, [computeLayout]);
 
+  // reset loaded flags when photos change
+  useEffect(() => {
+    setLoadedMap({});
+  }, [photos]);
+
   return (
     <div ref={stageRef} className="photo-stage" aria-hidden="true">
       <div ref={leftZoneRef} className="photo-zone photo-zone-left">
@@ -491,10 +497,14 @@ const PhotoStage = ({ photos, seed, onOpenLightbox }) => {
               title="Double-clique pour agrandir"
             >
               <div className="photo-frame">
-                <img
+                <motion.img
                   src={`ressources/photos_mims/${item.photo.fileName}`}
                   alt="Souvenir a deux"
-                  loading="lazy"
+                  loading="eager"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: loadedMap[item.photo.fileName] ? 1 : 0 }}
+                  transition={{ duration: 0.46, ease: 'easeOut', delay: item.delay }}
+                  onLoad={() => setLoadedMap((m) => ({ ...m, [item.photo.fileName]: true }))}
                   onError={(event) => {
                     if (event.target.dataset.altTried) return;
                     event.target.dataset.altTried = "true";
@@ -594,6 +604,30 @@ const UnifiedLoveApp = () => {
       });
     }
   }, [currentIndex]);
+
+  // Also proactively preload current + next slide photos (if any) to reduce perceived latency
+  const preloadPhoto = useCallback((fileName) => {
+    if (!fileName) return;
+    if (preloadedPhotosRef.current === true) return; // if we've done full preload, skip
+    try {
+      const img = new Image();
+      img.src = `ressources/photos_mims/${fileName}`;
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    // preload photos for current slide and next slide
+    const slide = slides[currentIndex];
+    const next = slides[Math.min(slides.length - 1, currentIndex + 1)];
+    if (slide && Array.isArray(slide.photos)) {
+      slide.photos.forEach(preloadPhoto);
+    }
+    if (next && Array.isArray(next.photos)) {
+      next.photos.forEach(preloadPhoto);
+    }
+  }, [currentIndex, preloadPhoto]);
 
   const clampWithinViewport = useCallback((left, top, width, height, margin = 12) => {
     if (typeof window === "undefined") {
