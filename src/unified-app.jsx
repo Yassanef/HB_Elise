@@ -54,7 +54,7 @@ const rawSlides = [
 
 const slides = rawSlides.map((slide, slideIndex) => ({
   ...slide,
-  decoratedPhotos: slide.photos.map((fileName, photoIndex) => ({
+  decoratedPhotos: (Array.isArray(slide.photos) ? slide.photos : []).map((fileName, photoIndex) => ({
     id: `${slideIndex}-${fileName}`,
     fileName,
     altFileName: fileName.endsWith(".jpg")
