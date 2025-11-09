@@ -14,8 +14,8 @@
   <canvas id="particles"></canvas>
 
   <div class="final-page-wrap">
-    <h1 class="final-title">Joyeux anniversaire, Élise ✨</h1>
-    <p class="final-sub">Merci pour ces moments magiques, continuons d'écrire notre histoire.</p>
+    <h1 class="final-title">Joyeux anniversaire Élise ✨</h1>
+    <p class="final-sub">Je t'aime de touuuut mon coeurrrr</p>
     <span class="sparkles" aria-hidden="true"></span>
     <div class="final-hearts-large float-up" aria-hidden="true">💖 💖 💖</div>
 
@@ -162,6 +162,11 @@
       const replayBtn = document.getElementById('replayBtn');
       if (replayBtn) {
         replayBtn.addEventListener('click', () => {
+          try {
+            sessionStorage.setItem('bgm:skipLast', '1');
+          } catch (error) {
+            /* ignore */
+          }
           window.location.href = 'index.html';
         });
       }
@@ -169,9 +174,234 @@
       const galleryBtn = document.getElementById('galleryBtn');
       if (galleryBtn) {
         galleryBtn.addEventListener('click', () => {
+          try {
+            sessionStorage.setItem('bgm:skipLast', '1');
+          } catch (error) {
+            /* ignore */
+          }
           window.location.href = 'ressources/diaporama.html';
         });
       }
+    })();
+  </script>
+  <script>
+    (function () {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const TRACKS = [
+        { id: 'frambosise', file: 'frambosise.m4a', title: 'Frambosise' },
+        { id: 'histoire', file: 'histoire.m4a', title: 'Histoire' },
+        { id: 'senora', file: 'senora.m4a', title: 'Señora' }
+      ];
+
+      const STORAGE = {
+        last: 'bgm:lastTrack',
+        volume: 'bgm:volume',
+        skip: 'bgm:skipLast'
+      };
+
+      const audio = new Audio();
+      audio.loop = true;
+
+      let currentTrackId = null;
+      let pendingPlay = null;
+
+      const readStoredVolume = () => {
+        try {
+          const raw = localStorage.getItem(STORAGE.volume);
+          const parsed = raw === null ? NaN : Number.parseFloat(raw);
+          if (Number.isFinite(parsed)) {
+            return Math.min(1, Math.max(0, parsed));
+          }
+        } catch (error) {
+          /* ignore */
+        }
+        return 0.6;
+      };
+
+      let volume = readStoredVolume();
+      audio.volume = volume;
+
+      const trackLabelFor = (id) => {
+        const found = TRACKS.find((item) => item.id === id);
+        return found ? found.title : null;
+      };
+
+      const widget = document.createElement('div');
+      widget.className = 'bgm-widget';
+
+      const header = document.createElement('header');
+      const title = document.createElement('p');
+      title.className = 'bgm-widget-title';
+      title.textContent = 'Fond musical';
+      const trackLine = document.createElement('p');
+      trackLine.className = 'bgm-widget-track';
+      trackLine.textContent = 'Lecture : —';
+      header.appendChild(title);
+      header.appendChild(trackLine);
+
+      const changeBtn = document.createElement('button');
+      changeBtn.type = 'button';
+      changeBtn.className = 'love-control-button';
+      changeBtn.textContent = 'Changer 🎵';
+
+      const volumeLabel = document.createElement('label');
+      volumeLabel.className = 'bgm-volume-label';
+      volumeLabel.setAttribute('for', 'finalBgmVolume');
+      const volumeText = document.createElement('span');
+      volumeText.textContent = `Volume (${Math.round(volume * 100)}%)`;
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.id = 'finalBgmVolume';
+      slider.min = '0';
+      slider.max = '100';
+      slider.step = '1';
+      slider.value = String(Math.round(volume * 100));
+      slider.className = 'love-speed-slider love-volume-slider';
+
+      volumeLabel.appendChild(volumeText);
+      volumeLabel.appendChild(slider);
+
+      widget.appendChild(header);
+      widget.appendChild(changeBtn);
+      widget.appendChild(volumeLabel);
+
+      document.body.appendChild(widget);
+
+      const updateTrackLine = () => {
+        const label = currentTrackId ? trackLabelFor(currentTrackId) : null;
+        trackLine.textContent = label ? `Lecture : ${label}` : 'Lecture : —';
+      };
+
+      const updateVolumeText = () => {
+        volumeText.textContent = `Volume (${Math.round(volume * 100)}%)`;
+      };
+
+      const selectTrack = (options = {}) => {
+        const { preferDifferent = false, excludeCurrent = false } = options;
+
+        const exclusion = new Set();
+        if (preferDifferent) {
+          try {
+            const last = localStorage.getItem(STORAGE.last);
+            if (last) {
+              exclusion.add(last);
+            }
+          } catch (error) {
+            /* ignore */
+          }
+        }
+        if (excludeCurrent && currentTrackId) {
+          exclusion.add(currentTrackId);
+        }
+
+        let pool = TRACKS.slice();
+        if (pool.length > 1 && exclusion.size) {
+          pool = pool.filter((track) => !exclusion.has(track.id));
+          if (!pool.length) {
+            pool = TRACKS.slice();
+          }
+        }
+
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        if (!chosen) {
+          return;
+        }
+
+        currentTrackId = chosen.id;
+        try {
+          localStorage.setItem(STORAGE.last, chosen.id);
+        } catch (error) {
+          /* ignore */
+        }
+
+        audio.src = `ressources/song/${chosen.file}`;
+        audio.currentTime = 0;
+        audio.volume = volume;
+
+        const attempt = audio.play();
+        if (attempt && typeof attempt.catch === 'function') {
+          attempt
+            .then(() => {
+              pendingPlay = null;
+            })
+            .catch((error) => {
+              if (error?.name === 'NotAllowedError' || error?.name === 'AbortError' || error?.name === 'NotSupportedError') {
+                pendingPlay = audio;
+              }
+            });
+        } else {
+          pendingPlay = null;
+        }
+
+        updateTrackLine();
+      };
+
+      const resumePending = () => {
+        if (pendingPlay) {
+          pendingPlay.volume = volume;
+          const attempt = pendingPlay.play();
+          if (attempt && typeof attempt.catch === 'function') {
+            attempt.catch(() => {});
+          }
+          pendingPlay = null;
+        }
+      };
+
+      changeBtn.addEventListener('click', () => {
+        selectTrack({ preferDifferent: true, excludeCurrent: true });
+      });
+
+      slider.addEventListener('input', (event) => {
+        const value = Number(event.target.value);
+        if (Number.isNaN(value)) {
+          return;
+        }
+        volume = Math.min(1, Math.max(0, value / 100));
+        audio.volume = volume;
+        if (pendingPlay) {
+          pendingPlay.volume = volume;
+        }
+        updateVolumeText();
+        try {
+          localStorage.setItem(STORAGE.volume, volume.toFixed(2));
+        } catch (error) {
+          /* ignore */
+        }
+      });
+
+      const preferDifferentOnLoad = (() => {
+        let shouldDiffer = false;
+        try {
+          const skip = sessionStorage.getItem(STORAGE.skip) === '1';
+          if (skip) {
+            shouldDiffer = true;
+            sessionStorage.removeItem(STORAGE.skip);
+          }
+        } catch (error) {
+          /* ignore */
+        }
+        return shouldDiffer;
+      })();
+
+      selectTrack({ preferDifferent: preferDifferentOnLoad });
+      updateVolumeText();
+
+      window.addEventListener('pointerdown', resumePending, { passive: true });
+      window.addEventListener('keydown', resumePending);
+
+      const cleanup = () => {
+        window.removeEventListener('pointerdown', resumePending);
+        window.removeEventListener('keydown', resumePending);
+        pendingPlay = null;
+        audio.pause();
+        audio.src = '';
+      };
+
+      window.addEventListener('pagehide', cleanup, { once: true });
+      window.addEventListener('beforeunload', cleanup, { once: true });
     })();
   </script>
   <script>

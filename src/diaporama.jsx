@@ -1,6 +1,6 @@
 /* global React, ReactDOM */
 
-const { useState, useEffect, useMemo } = React;
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 const fallbackMotion = new Proxy(
   {},
@@ -38,6 +38,29 @@ const phrases = [
 ];
 
 const totalPhotos = imageBaseNames.length;
+
+const backgroundTracks = [
+  { id: 'frambosise', file: 'frambosise.m4a', title: 'Frambosise' },
+  { id: 'histoire', file: 'histoire.m4a', title: 'Histoire' },
+  { id: 'senora', file: 'senora.m4a', title: 'Señora' }
+];
+
+const BGM_STORAGE_KEYS = {
+  last: 'bgm:lastTrack',
+  volume: 'bgm:volume',
+  skip: 'bgm:skipLast'
+};
+
+const resolveSongPath = (fileName) => {
+  if (typeof window === 'undefined') {
+    return `ressources/song/${fileName}`;
+  }
+  const path = window.location.pathname || '';
+  if (path.includes('/ressources/')) {
+    return `song/${fileName}`;
+  }
+  return `ressources/song/${fileName}`;
+};
 
 function shuffle(array) {
   const result = [...array];
@@ -132,12 +155,117 @@ const App = () => {
   const [slideKey, setSlideKey] = useState(0);
   const [phraseOrder, setPhraseOrder] = useState(() => shuffle([...phrases]));
   const [phraseIndex, setPhraseIndex] = useState(0);
+  const [bgmVolume, setBgmVolume] = useState(() => {
+    if (typeof window === 'undefined') return 0.6;
+    try {
+      const stored = window.localStorage?.getItem(BGM_STORAGE_KEYS.volume);
+      if (stored !== null) {
+        const parsed = Number.parseFloat(stored);
+        if (Number.isFinite(parsed)) {
+          return Math.min(1, Math.max(0, parsed));
+        }
+      }
+    } catch (error) {
+      /* ignore */
+    }
+    return 0.6;
+  });
+  const [bgmTrackId, setBgmTrackId] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return window.localStorage?.getItem(BGM_STORAGE_KEYS.last) ?? null;
+    } catch (error) {
+      return null;
+    }
+  });
+  const bgmAudioRef = useRef(null);
+  const pendingBgmRef = useRef(null);
+  const bgmVolumeRef = useRef(bgmVolume);
+  const bgmTrackIdRef = useRef(bgmTrackId);
+
+  const selectBackgroundTrack = useCallback((options = {}) => {
+    const audio = bgmAudioRef.current;
+    if (!audio) {
+      return null;
+    }
+
+    const { preferDifferent = false, excludeCurrent = false } = options;
+    const exclusion = new Set();
+
+    if (preferDifferent) {
+      try {
+        const last = window.localStorage?.getItem(BGM_STORAGE_KEYS.last);
+        if (last) {
+          exclusion.add(last);
+        }
+      } catch (error) {
+        /* ignore */
+      }
+      if (bgmTrackIdRef.current) {
+        exclusion.add(bgmTrackIdRef.current);
+      }
+    }
+
+    if (excludeCurrent && bgmTrackIdRef.current) {
+      exclusion.add(bgmTrackIdRef.current);
+    }
+
+    let pool = backgroundTracks.slice();
+    if (pool.length > 1 && exclusion.size) {
+      pool = pool.filter((track) => !exclusion.has(track.id));
+      if (!pool.length) {
+        pool = backgroundTracks.slice();
+      }
+    }
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    if (!chosen) {
+      return null;
+    }
+
+  audio.src = resolveSongPath(chosen.file);
+    audio.currentTime = 0;
+    audio.volume = bgmVolumeRef.current;
+
+    const attempt = audio.play();
+    if (attempt && typeof attempt.catch === 'function') {
+      attempt
+        .then(() => {
+          pendingBgmRef.current = null;
+        })
+        .catch((error) => {
+          if (error?.name === 'NotAllowedError' || error?.name === 'AbortError' || error?.name === 'NotSupportedError') {
+            pendingBgmRef.current = audio;
+          }
+        });
+    } else {
+      pendingBgmRef.current = null;
+    }
+
+    setBgmTrackId(chosen.id);
+    bgmTrackIdRef.current = chosen.id;
+
+    try {
+      window.localStorage?.setItem(BGM_STORAGE_KEYS.last, chosen.id);
+    } catch (error) {
+      /* ignore */
+    }
+
+    return chosen.id;
+  }, [setBgmTrackId]);
 
   const currentGroup = deck.groups[deck.index] ?? [];
   const currentPhotos = useMemo(
     () => decoratePhotos(currentGroup),
     [deck.groups, deck.index]
   );
+
+  const bgmTrackTitle = useMemo(() => {
+    const track = backgroundTracks.find((item) => item.id === bgmTrackId);
+    return track?.title ?? null;
+  }, [bgmTrackId]);
+
+  const bgmVolumePercent = Math.round(Math.min(100, Math.max(0, bgmVolume * 100)));
 
   const photosSeen = useMemo(() => {
     if (deck.groups.length === 0) {
@@ -160,6 +288,109 @@ const App = () => {
       img2.src = `${base}.JPG`;
     });
   }, []);
+
+  useEffect(() => {
+    bgmVolumeRef.current = bgmVolume;
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage?.setItem(BGM_STORAGE_KEYS.volume, bgmVolume.toFixed(2));
+      } catch (error) {
+        /* ignore */
+      }
+    }
+
+    const audio = bgmAudioRef.current;
+    if (audio) {
+      audio.volume = bgmVolume;
+    }
+  }, [bgmVolume]);
+
+  useEffect(() => {
+    bgmTrackIdRef.current = bgmTrackId ?? null;
+  }, [bgmTrackId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const audio = new Audio();
+    audio.loop = true;
+    audio.volume = bgmVolumeRef.current;
+    bgmAudioRef.current = audio;
+
+    let preferDifferent = false;
+    try {
+      const skip = window.sessionStorage?.getItem(BGM_STORAGE_KEYS.skip) === '1';
+      if (skip) {
+        preferDifferent = true;
+        window.sessionStorage.removeItem(BGM_STORAGE_KEYS.skip);
+      }
+    } catch (error) {
+      /* ignore */
+    }
+
+    selectBackgroundTrack({ preferDifferent });
+
+    const cleanup = () => {
+      pendingBgmRef.current = null;
+      if (bgmAudioRef.current === audio) {
+        bgmAudioRef.current = null;
+      }
+      audio.pause();
+      audio.src = '';
+    };
+
+    const lifecycleCleanup = () => cleanup();
+    window.addEventListener('pagehide', lifecycleCleanup, { once: true });
+    window.addEventListener('beforeunload', lifecycleCleanup, { once: true });
+
+    return () => {
+      window.removeEventListener('pagehide', lifecycleCleanup);
+      window.removeEventListener('beforeunload', lifecycleCleanup);
+      cleanup();
+    };
+  }, [selectBackgroundTrack]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const resumePending = () => {
+      const pending = pendingBgmRef.current;
+      if (!pending) {
+        return;
+      }
+      pending.volume = bgmVolumeRef.current;
+      const attempt = pending.play();
+      if (attempt && typeof attempt.catch === 'function') {
+        attempt.catch(() => {});
+      }
+      pendingBgmRef.current = null;
+    };
+
+    window.addEventListener('pointerdown', resumePending, { passive: true });
+    window.addEventListener('keydown', resumePending);
+
+    return () => {
+      window.removeEventListener('pointerdown', resumePending);
+      window.removeEventListener('keydown', resumePending);
+    };
+  }, []);
+
+  const handleBgmVolumeChange = useCallback((event) => {
+    const value = Number(event.target.value);
+    if (Number.isNaN(value)) {
+      return;
+    }
+    const nextVolume = Math.min(1, Math.max(0, value / 100));
+    setBgmVolume(nextVolume);
+  }, []);
+
+  const handleChangeTrack = useCallback(() => {
+    selectBackgroundTrack({ preferDifferent: true, excludeCurrent: true });
+  }, [selectBackgroundTrack]);
 
   const handleNext = () => {
     if (isExhausted) {
@@ -237,6 +468,38 @@ const App = () => {
           Rejouer
         </button>
       </section>
+
+          <section className="mt-8 mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-3xl bg-white/70 p-5 text-center shadow-xl backdrop-blur-sm">
+            <header className="flex flex-col gap-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400/80">
+                Fond musical
+              </p>
+              <p className="love-bgm-track text-sm" aria-live="polite">
+                {bgmTrackTitle ? `Lecture : ${bgmTrackTitle}` : "Lecture : —"}
+              </p>
+            </header>
+            <button
+              type="button"
+              onClick={handleChangeTrack}
+              className="love-control-button"
+            >
+              Changer 🎵
+            </button>
+            <label htmlFor="diaporamaBgmVolume" className="bgm-volume-label w-full">
+              <span>Volume ({bgmVolumePercent}%)</span>
+              <input
+                id="diaporamaBgmVolume"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={bgmVolumePercent}
+                onChange={handleBgmVolumeChange}
+                className="love-speed-slider love-volume-slider"
+                aria-label="Volume de la musique de fond"
+              />
+            </label>
+          </section>
 
       {isExhausted && (
         <p className="mt-6 text-center text-sm text-rosewood/60">
