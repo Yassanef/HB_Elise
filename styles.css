@@ -170,14 +170,16 @@ body,
 
 .phrase {
   font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  font-size: clamp(2.2rem, 6vw, 4.2rem);
-  line-height: 1.45;
+  font-size: clamp(1.1rem, 3.2vw, 2.1rem);
+  line-height: 1.38;
   color: var(--text);
   text-shadow: 0 8px 22px rgba(255, 210, 230, 0.42);
   font-weight: 400;
   margin: 0;
-  max-width: min(780px, 88vw);
+  max-width: min(98vw, 540px);
   margin-inline: auto;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .phrase span {
@@ -636,11 +638,13 @@ body,
 
 @media (max-width: 640px) {
   .app-shell {
-    padding: 18vh 3vw 28vh;
+    padding: 10vh 2vw 18vh;
   }
 
   .phrase {
-    font-size: clamp(2rem, 8vw, 3rem);
+    font-size: clamp(1rem, 5vw, 1.5rem);
+    max-width: min(99vw, 340px);
+    line-height: 1.22;
   }
 
   .love-controls {
